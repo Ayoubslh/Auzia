@@ -10,24 +10,48 @@ export default function TabLayout() {
         tabBarActiveTintColor: 'black',
       }}>
       <Tabs.Screen
-        name="index"
+        name="diaspora"
         options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <HeaderButton />
-            </Link>
-          ),
+          title: 'Diaspora',
+          headerShown:false,
+          tabBarIcon: ({ color }) => <TabBarIcon name="globe" color={color} />,
+         
         }}
       />
       <Tabs.Screen
-        name="two"
+        name="produits"
         options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+          title: 'Produits',
+          headerShown:false,
+          tabBarIcon: ({ color }) => <TabBarIcon name="cube" color={color} />,
+        }}  
+      />
+       <Tabs.Screen
+        name="facture"
+        options={{
+          title: 'Facture',
+          headerShown:false,
+          tabBarIcon: ({ color }) => <TabBarIcon name="check" color={color} />,
         }}
       />
+     
+      <Tabs.Screen
+        name="livraison"
+        options={{
+          title: 'Livraison',
+          headerShown:false,
+          tabBarIcon: ({ color }) => <TabBarIcon name="truck" color={color} />,
+        }}
+      />
+       <Tabs.Screen
+        name="announces"
+        options={{
+          title: 'Annonces',
+          headerShown:false,
+          tabBarIcon: ({ color }) => <TabBarIcon name="phone" color={color} />,
+        }}
+      />
+     
     </Tabs>
   );
 }
