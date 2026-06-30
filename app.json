@@ -3,7 +3,7 @@
     "name": "Auzia",
     "slug": "Auzia",
     "version": "1.0.0",
-    "scheme": "Auzia",
+    "scheme": "auzia",
     "platforms": [
       "ios",
       "android"
