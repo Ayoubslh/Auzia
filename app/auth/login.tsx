@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { supabase } from '../../supabase/client';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -42,16 +43,21 @@ export default function LoginScreen() {
   };
 
   const handleGoogle = async () => {
+    const redirectUrl = Linking.createURL('auth/callback');
     try {
       setLoading(true);
+      await WebBrowser.warmUpAsync();
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: 'Auzia://auth/callback', skipBrowserRedirect: true },
+        options: { redirectTo: redirectUrl, skipBrowserRedirect: true },
       });
       if (error || !data.url) throw error ?? new Error('No OAuth URL');
 
-      const result = await WebBrowser.openAuthSessionAsync(data.url, 'Auzia://auth/callback');
-      if (result.type !== 'success') return;
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+      if (result.type !== 'success') {
+        // User cancelled or browser was dismissed
+        return;
+      }
 
       const { error: sessionError } = await supabase.auth.exchangeCodeForSession(result.url);
       if (sessionError) throw sessionError;
@@ -61,6 +67,7 @@ export default function LoginScreen() {
     } catch (e: any) {
       Alert.alert('Erreur Google', e.message ?? 'Connexion Google échouée');
     } finally {
+      await WebBrowser.coolDownAsync();
       setLoading(false);
     }
   };

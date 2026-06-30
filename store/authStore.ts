@@ -47,8 +47,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    const profile = await userRepository.getCurrentUser();
-    set({ isAuthenticated: true, currentUser: profile, hasCompletedOnboarding: true });
+    let profile: User | null = null;
+    try { profile = await userRepository.getCurrentUser(); } catch { /* profile not set up yet */ }
+    const hasOnboarded = !!(profile?.nickname && profile?.cityOfResidence);
+    set({ isAuthenticated: true, currentUser: profile, hasCompletedOnboarding: hasOnboarded });
   },
 
   // ── Google login — session already set by exchangeCodeForSession in the screen
@@ -95,9 +97,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   register: async (email, password) => {
     const { error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
-    // Profile row is created by the handle_new_user trigger
-    // User still needs to complete onboarding
-    const profile = await userRepository.getCurrentUser();
+    // Profile row created by DB trigger — might not exist immediately for new users
+    let profile: User | null = null;
+    try { profile = await userRepository.getCurrentUser(); } catch { /* new user, no profile yet */ }
     set({ isAuthenticated: true, currentUser: profile, hasCompletedOnboarding: false });
   },
 
