@@ -45,7 +45,9 @@
     "error_invalid_email": "عنوان البريد الإلكتروني غير صالح",
     "error_password_short": "يجب أن تحتوي على 8 أحرف على الأقل",
     "error_passwords_mismatch": "كلمتا المرور غير متطابقتين",
-    "error_min_chars": "8 أحرف على الأقل"
+    "error_min_chars": "8 أحرف على الأقل",
+    "error_title": "خطأ",
+    "error_register_failed": "فشل التسجيل. يرجى المحاولة مجدداً."
   },
   "onboarding": {
     "welcome_arabic": "مرحبا بكم",

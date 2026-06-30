@@ -45,7 +45,9 @@
     "error_invalid_email": "Adresse e-mail invalide",
     "error_password_short": "Au moins 8 caractères requis",
     "error_passwords_mismatch": "Les mots de passe ne correspondent pas",
-    "error_min_chars": "8 caractères minimum"
+    "error_min_chars": "8 caractères minimum",
+    "error_title": "Erreur",
+    "error_register_failed": "Inscription échouée. Veuillez réessayer."
   },
   "onboarding": {
     "welcome_arabic": "مرحبا بكم",

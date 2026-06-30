@@ -45,7 +45,9 @@
     "error_invalid_email": "Invalid email address",
     "error_password_short": "At least 8 characters required",
     "error_passwords_mismatch": "Passwords do not match",
-    "error_min_chars": "8 characters minimum"
+    "error_min_chars": "8 characters minimum",
+    "error_title": "Error",
+    "error_register_failed": "Registration failed. Please try again."
   },
   "onboarding": {
     "welcome_arabic": "مرحبا بكم",

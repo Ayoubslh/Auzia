@@ -8,8 +8,9 @@ if (typeof (global as any).crypto === 'undefined') {
 }
 if (!(global as any).crypto.getRandomValues) {
   (global as any).crypto.getRandomValues = <T extends ArrayBufferView>(array: T): T => {
-    const bytes = getRandomBytes((array as Uint8Array).byteLength);
-    (array as Uint8Array).set(bytes);
+    const bytes = getRandomBytes(array.byteLength);
+    // Use a byte-level view so set() works regardless of the TypedArray element size
+    new Uint8Array(array.buffer as ArrayBuffer, array.byteOffset, array.byteLength).set(bytes);
     return array;
   };
 }
