@@ -95,11 +95,16 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   // ── Email registration ───────────────────────────────────────────────────────
   register: async (email, password) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
-    // Profile row created by DB trigger — might not exist immediately for new users
+    if (!data.session) {
+      // Email confirmation is enabled in Supabase — user was created but has no active
+      // session until they click the confirmation link. Signal this to the caller.
+      throw new Error('CONFIRM_EMAIL');
+    }
+    // Email confirmation is disabled — session is live, proceed straight to onboarding
     let profile: User | null = null;
-    try { profile = await userRepository.getCurrentUser(); } catch { /* new user, no profile yet */ }
+    try { profile = await userRepository.getCurrentUser(); } catch { /* profile row may lag */ }
     set({ isAuthenticated: true, currentUser: profile, hasCompletedOnboarding: false });
   },
 

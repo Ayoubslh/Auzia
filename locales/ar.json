@@ -47,7 +47,9 @@
     "error_passwords_mismatch": "كلمتا المرور غير متطابقتين",
     "error_min_chars": "8 أحرف على الأقل",
     "error_title": "خطأ",
-    "error_register_failed": "فشل التسجيل. يرجى المحاولة مجدداً."
+    "error_register_failed": "فشل التسجيل. يرجى المحاولة مجدداً.",
+    "check_email_title": "تحقق من بريدك الإلكتروني",
+    "check_email_message": "تم إرسال رابط تأكيد إلى بريدك الإلكتروني. انقر عليه ثم سجّل دخولك."
   },
   "onboarding": {
     "welcome_arabic": "مرحبا بكم",

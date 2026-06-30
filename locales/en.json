@@ -47,7 +47,9 @@
     "error_passwords_mismatch": "Passwords do not match",
     "error_min_chars": "8 characters minimum",
     "error_title": "Error",
-    "error_register_failed": "Registration failed. Please try again."
+    "error_register_failed": "Registration failed. Please try again.",
+    "check_email_title": "Check your email",
+    "check_email_message": "A confirmation link has been sent to your email address. Click it, then sign in."
   },
   "onboarding": {
     "welcome_arabic": "مرحبا بكم",

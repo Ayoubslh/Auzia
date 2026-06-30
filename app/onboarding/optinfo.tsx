@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -29,8 +30,12 @@ export default function OptInfoScreen() {
   const [about, setAbout] = useState('');
 
   const handleJoin = async () => {
-    await completeOnboarding({ workField: domain, status, phoneNumber: phone, linkedin, instagram, aboutMe: about });
-    router.replace('/(tabs)/diaspora');
+    try {
+      await completeOnboarding({ workField: domain, status, phoneNumber: phone, linkedin, instagram, aboutMe: about });
+      router.replace('/(tabs)/diaspora');
+    } catch (e: any) {
+      Alert.alert('Erreur', e.message ?? 'Impossible de finaliser le profil');
+    }
   };
 
   return (

@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -46,14 +47,18 @@ export default function ReqInfoScreen() {
 
   const handleNext = async () => {
     const flag = countriesData.find((c) => c.country === country)?.flag ?? '';
-    await updateProfile({
-      nickname: nickname.trim(),
-      countryOfResidence: country,
-      countryOfResidenceFlag: flag,
-      cityOfResidence: city,
-      avatarInitials: nickname.trim().slice(0, 2).toUpperCase(),
-    });
-    router.push('/onboarding/optinfo' as any);
+    try {
+      await updateProfile({
+        nickname: nickname.trim(),
+        countryOfResidence: country,
+        countryOfResidenceFlag: flag,
+        cityOfResidence: city,
+        avatarInitials: nickname.trim().slice(0, 2).toUpperCase(),
+      });
+      router.push('/onboarding/optinfo' as any);
+    } catch (e: any) {
+      Alert.alert(t('auth.error_title'), e.message ?? t('auth.error_register_failed'));
+    }
   };
 
   return (

@@ -47,7 +47,9 @@
     "error_passwords_mismatch": "Les mots de passe ne correspondent pas",
     "error_min_chars": "8 caractères minimum",
     "error_title": "Erreur",
-    "error_register_failed": "Inscription échouée. Veuillez réessayer."
+    "error_register_failed": "Inscription échouée. Veuillez réessayer.",
+    "check_email_title": "Vérifiez votre e-mail",
+    "check_email_message": "Un lien de confirmation a été envoyé à votre adresse e-mail. Cliquez dessus puis connectez-vous."
   },
   "onboarding": {
     "welcome_arabic": "مرحبا بكم",

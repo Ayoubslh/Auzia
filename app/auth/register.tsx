@@ -49,7 +49,15 @@ export default function RegisterScreen() {
       await register(email, password);
       router.replace('/onboarding/welcome' as any);
     } catch (e: any) {
-      Alert.alert(t('auth.error_title'), e.message ?? t('auth.error_register_failed'));
+      if (e.message === 'CONFIRM_EMAIL') {
+        Alert.alert(
+          t('auth.check_email_title'),
+          t('auth.check_email_message'),
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      } else {
+        Alert.alert(t('auth.error_title'), e.message ?? t('auth.error_register_failed'));
+      }
     } finally {
       setLoading(false);
     }
