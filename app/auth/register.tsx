@@ -75,15 +75,21 @@ export default function RegisterScreen() {
       if (error || !data.url) throw error ?? new Error('No OAuth URL');
 
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
-      if (result.type !== 'success') {
-        return;
-      }
+      if (result.type !== 'success') return;
 
-      const { error: sessionError } = await supabase.auth.exchangeCodeForSession(result.url);
+      const parsed = Linking.parse(result.url);
+      const code = parsed.queryParams?.code as string | undefined;
+      if (!code) throw new Error('No authorization code in redirect URL');
+      const { error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
       if (sessionError) throw sessionError;
 
       await loginWithGoogle();
-      router.replace('/onboarding/welcome' as any);
+      const { hasCompletedOnboarding } = useAuthStore.getState();
+      if (hasCompletedOnboarding) {
+        router.replace('/(tabs)/diaspora');
+      } else {
+        router.replace('/onboarding/welcome' as any);
+      }
     } catch (e: any) {
       Alert.alert('Erreur Google', e.message ?? 'Inscription Google échouée');
     } finally {
