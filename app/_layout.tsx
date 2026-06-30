@@ -67,7 +67,7 @@ export default function RootLayout() {
         <Stack.Screen name="privacy" />
         <Stack.Screen name="help" />
         <Stack.Screen name="messages" />
-        <Stack.Screen name="user" />
+        <Stack.Screen name="user/[id]" />
         <Stack.Screen name="notifications" />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
