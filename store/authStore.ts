@@ -10,7 +10,7 @@ interface AuthState {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, phoneNumber?: string) => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
   completeOnboarding: (userData: Partial<User>) => Promise<void>;
@@ -94,8 +94,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   // ── Email registration ───────────────────────────────────────────────────────
-  register: async (email, password) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+  register: async (email, password, phoneNumber) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: phoneNumber ? { data: { phone_number: phoneNumber } } : undefined,
+    });
     if (error) throw error;
     if (!data.session) {
       // Email confirmation is enabled in Supabase — user was created but has no active

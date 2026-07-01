@@ -49,7 +49,9 @@
     "error_title": "خطأ",
     "error_register_failed": "فشل التسجيل. يرجى المحاولة مجدداً.",
     "check_email_title": "تحقق من بريدك الإلكتروني",
-    "check_email_message": "تم إرسال رابط تأكيد إلى بريدك الإلكتروني. انقر عليه ثم سجّل دخولك."
+    "check_email_message": "تم إرسال رابط تأكيد إلى بريدك الإلكتروني. انقر عليه ثم سجّل دخولك.",
+    "phone_label": "رقم الهاتف",
+    "phone_placeholder": "+213 6XX XXX XXX"
   },
   "onboarding": {
     "welcome_arabic": "مرحبا بكم",
@@ -243,6 +245,7 @@
   "user_card": {
     "see_profile": "عرض الملف",
     "connect": "تواصل",
+    "pending": "قيد الانتظار",
     "common": " مشترك"
   },
   "language": {

@@ -91,7 +91,7 @@ export default function DiasporaScreen() {
   const { currentUser } = useAuthStore();
   const { filteredUsers, fetchUsers, filter, setFilter, resetFilter } = useDiasporaStore();
   const { conversations, fetchConversations } = useMessageStore();
-  const sendConnectionRequest = useConnectionStore((s) => s.sendRequest);
+  const { sentRequests, fetchSentRequests, sendRequest: sendConnectionRequest } = useConnectionStore();
   const showToast = useToastStore((s) => s.show);
   const { t } = useTranslation();
 
@@ -100,6 +100,11 @@ export default function DiasporaScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [markerUser, setMarkerUser] = useState<User | null>(null);
 
+  const pendingIds = useMemo(
+    () => new Set(sentRequests.map((r) => r.receiverId)),
+    [sentRequests]
+  );
+
   const cardAnim = useRef(new Animated.Value(0)).current;
 
   const totalUnread = conversations.reduce((s, c) => s + c.unreadCount, 0);
@@ -107,6 +112,7 @@ export default function DiasporaScreen() {
   useEffect(() => {
     fetchUsers();
     fetchConversations();
+    if (currentUser) fetchSentRequests(currentUser.id);
   }, []);
 
   // ── Marker card ────────────────────────────────────────────────────────────
@@ -353,14 +359,21 @@ export default function DiasporaScreen() {
               >
                 <Text style={styles.markerCardBtnOutlineText}>{t('user_card.see_profile')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.markerCardBtnPrimary}
-                onPress={() => { hideMarkerCard(); setConnectTarget(markerUser); }}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="person-add-outline" size={13} color={Colors.white} />
-                <Text style={styles.markerCardBtnPrimaryText}>{t('user_card.connect')}</Text>
-              </TouchableOpacity>
+              {pendingIds.has(markerUser.id) ? (
+                <View style={[styles.markerCardBtnOutline, styles.markerCardBtnPending]}>
+                  <Ionicons name="time-outline" size={13} color={Colors.textTertiary} />
+                  <Text style={styles.markerCardBtnPendingText}>{t('user_card.pending')}</Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.markerCardBtnPrimary}
+                  onPress={() => { hideMarkerCard(); setConnectTarget(markerUser); }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="person-add-outline" size={13} color={Colors.white} />
+                  <Text style={styles.markerCardBtnPrimaryText}>{t('user_card.connect')}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </Animated.View>
         )}
@@ -385,7 +398,11 @@ export default function DiasporaScreen() {
         data={displayedUsers}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <UserCard user={item} onConnect={() => setConnectTarget(item)} />
+          <UserCard
+            user={item}
+            onConnect={() => setConnectTarget(item)}
+            isPending={pendingIds.has(item.id)}
+          />
         )}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
@@ -539,6 +556,16 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     fontWeight: FontWeight.medium,
     color: Colors.white,
+  },
+  markerCardBtnPending: {
+    flexDirection: 'row',
+    gap: 4,
+    backgroundColor: Colors.background,
+  },
+  markerCardBtnPendingText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.medium,
+    color: Colors.textTertiary,
   },
 
   // ── Members ────────────────────────────────────────────────────────────────

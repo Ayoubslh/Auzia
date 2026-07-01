@@ -30,6 +30,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirm?: string }>({});
 
@@ -46,7 +47,7 @@ export default function RegisterScreen() {
     if (!validate()) return;
     setLoading(true);
     try {
-      await register(email, password);
+      await register(email, password, phone || undefined);
       router.replace('/onboarding/welcome' as any);
     } catch (e: any) {
       if (e.message === 'CONFIRM_EMAIL') {
@@ -163,6 +164,15 @@ export default function RegisterScreen() {
               secureToggle
               placeholder={t('auth.confirm_password_placeholder')}
               error={errors.confirm}
+              containerStyle={styles.inputContainer}
+            />
+
+            <Input
+              label={t('auth.phone_label')}
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              placeholder={t('auth.phone_placeholder')}
               containerStyle={styles.inputContainer}
             />
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../../theme';
@@ -10,9 +11,10 @@ import type { User } from '../../types';
 interface UserCardProps {
   user: User;
   onConnect?: () => void;
+  isPending?: boolean;
 }
 
-export const UserCard: React.FC<UserCardProps> = ({ user, onConnect }) => {
+export const UserCard: React.FC<UserCardProps> = ({ user, onConnect, isPending = false }) => {
   const router = useRouter();
   const { t } = useTranslation();
 
@@ -54,13 +56,20 @@ export const UserCard: React.FC<UserCardProps> = ({ user, onConnect }) => {
           onPress={() => router.push(`/user/${user.id}`)}
           style={styles.profileBtn}
         />
-        <Button
-          label={t('user_card.connect')}
-          variant="primary"
-          size="sm"
-          onPress={onConnect ?? (() => {})}
-          style={styles.connectBtn}
-        />
+        {isPending ? (
+          <View style={[styles.connectBtn, styles.pendingBtn]}>
+            <Ionicons name="time-outline" size={13} color={Colors.textTertiary} />
+            <Text style={styles.pendingText}>{t('user_card.pending')}</Text>
+          </View>
+        ) : (
+          <Button
+            label={t('user_card.connect')}
+            variant="primary"
+            size="sm"
+            onPress={onConnect ?? (() => {})}
+            style={styles.connectBtn}
+          />
+        )}
       </View>
     </View>
   );
@@ -89,4 +98,16 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.xs },
   profileBtn: { flex: 1 },
   connectBtn: { flex: 1 },
+  pendingBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    height: 32,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.background,
+  },
+  pendingText: { fontSize: FontSize.sm, color: Colors.textTertiary, fontWeight: FontWeight.medium },
 });

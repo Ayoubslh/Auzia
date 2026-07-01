@@ -18,6 +18,7 @@ import { Select } from '../../components/ui/Select';
 import { useAuthStore } from '../../store/authStore';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius } from '../../theme';
 import countriesData from '../../mock/countries.json';
+import { getCityCoordinates } from '../../utils/cityCoordinates';
 
 const COUNTRY_OPTIONS = countriesData.map((c) => ({
   label: c.country,
@@ -47,6 +48,7 @@ export default function ReqInfoScreen() {
 
   const handleNext = async () => {
     const flag = countriesData.find((c) => c.country === country)?.flag ?? '';
+    const coords = getCityCoordinates(city);
     try {
       await updateProfile({
         nickname: nickname.trim(),
@@ -54,6 +56,7 @@ export default function ReqInfoScreen() {
         countryOfResidenceFlag: flag,
         cityOfResidence: city,
         avatarInitials: nickname.trim().slice(0, 2).toUpperCase(),
+        ...(coords ?? {}),
       });
       router.push('/onboarding/optinfo' as any);
     } catch (e: any) {
