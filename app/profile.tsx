@@ -105,11 +105,6 @@ export default function ProfileScreen() {
         <Section title={t('profile.info_section')}>
           <DetailRow icon="briefcase-outline" label={t('profile.field_domain')} value={currentUser.workField} />
           <DetailRow
-            icon="earth-outline"
-            label={t('profile.field_origin')}
-            value={`${currentUser.countryOfOrigin} ${currentUser.countryOfOriginFlag}`}
-          />
-          <DetailRow
             icon="location-outline"
             label={t('profile.field_residence')}
             value={`${currentUser.cityOfResidence}, ${currentUser.countryOfResidence}`}

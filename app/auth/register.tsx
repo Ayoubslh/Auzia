@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
   Alert,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,9 +20,16 @@ import * as Linking from 'expo-linking';
 import { supabase } from '../../supabase/client';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { FilterSheet } from '../../components/ui/FilterSheet';
 import { useAuthStore } from '../../store/authStore';
+import { PHONE_CODES, type PhoneCode } from '../../utils/phoneCodes';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../../theme';
 
+const CODE_OPTIONS = PHONE_CODES.map((c) => ({
+  label: `${c.label} (${c.code})`,
+  value: c.flag,
+  icon: c.flag,
+}));
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -31,6 +40,8 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [selectedCode, setSelectedCode] = useState<PhoneCode>(PHONE_CODES[0]);
+  const [codePickerOpen, setCodePickerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirm?: string }>({});
 
@@ -46,8 +57,9 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     if (!validate()) return;
     setLoading(true);
+    const fullPhone = phone.trim() ? `${selectedCode.code}${phone.trim()}` : undefined;
     try {
-      await register(email, password, phone || undefined);
+      await register(email, password, fullPhone);
       router.replace('/onboarding/welcome' as any);
     } catch (e: any) {
       if (e.message === 'CONFIRM_EMAIL') {
@@ -101,8 +113,9 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView
@@ -167,14 +180,30 @@ export default function RegisterScreen() {
               containerStyle={styles.inputContainer}
             />
 
-            <Input
-              label={t('auth.phone_label')}
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              placeholder={t('auth.phone_placeholder')}
-              containerStyle={styles.inputContainer}
-            />
+            {/* Phone with country code picker */}
+            <View style={styles.phoneContainer}>
+              <Text style={styles.phoneLabel}>{t('auth.phone_label')}</Text>
+              <View style={styles.phoneRow}>
+                <TouchableOpacity
+                  style={styles.codeBtn}
+                  onPress={() => setCodePickerOpen(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.codeFlag}>{selectedCode.flag}</Text>
+                  <Text style={styles.codeText}>{selectedCode.code}</Text>
+                  <Ionicons name="chevron-down" size={13} color={Colors.textTertiary} />
+                </TouchableOpacity>
+                <View style={styles.phoneDivider} />
+                <TextInput
+                  style={styles.phoneInput}
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  placeholder={t('auth.phone_placeholder')}
+                  placeholderTextColor={Colors.textTertiary}
+                />
+              </View>
+            </View>
 
             <Text style={styles.terms}>
               {t('auth.terms_prefix')}
@@ -199,6 +228,19 @@ export default function RegisterScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <FilterSheet
+        visible={codePickerOpen}
+        title={t('auth.phone_code_picker_title')}
+        options={CODE_OPTIONS}
+        value={selectedCode.flag}
+        onSelect={(flag) => {
+          const found = PHONE_CODES.find((c) => c.flag === flag);
+          if (found) setSelectedCode(found);
+          setCodePickerOpen(false);
+        }}
+        onClose={() => setCodePickerOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -218,9 +260,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Spacing.xxl,
     left: Spacing.base,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -274,6 +316,46 @@ const styles = StyleSheet.create({
   dividerText: { fontSize: FontSize.sm, color: Colors.textTertiary },
 
   inputContainer: { marginBottom: Spacing.xs },
+
+  phoneContainer: { gap: Spacing.xs, marginBottom: Spacing.xs },
+  phoneLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semibold,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.white,
+    minHeight: 48,
+    overflow: 'hidden',
+  },
+  codeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  codeFlag: { fontSize: 18 },
+  codeText: {
+    fontSize: FontSize.base,
+    fontWeight: FontWeight.medium,
+    color: Colors.textPrimary,
+  },
+  phoneDivider: { width: 1, height: 28, backgroundColor: Colors.border },
+  phoneInput: {
+    flex: 1,
+    fontSize: FontSize.base,
+    color: Colors.textPrimary,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+  },
 
   terms: { fontSize: FontSize.xs, color: Colors.textTertiary, lineHeight: 18, marginTop: -Spacing.xs },
   termsLink: { color: Colors.primary, fontWeight: FontWeight.medium },

@@ -11,10 +11,12 @@ import type { User } from '../../types';
 interface UserCardProps {
   user: User;
   onConnect?: () => void;
+  onMessage?: () => void;
   isPending?: boolean;
+  isConnected?: boolean;
 }
 
-export const UserCard: React.FC<UserCardProps> = ({ user, onConnect, isPending = false }) => {
+export const UserCard: React.FC<UserCardProps> = ({ user, onConnect, onMessage, isPending = false, isConnected = false }) => {
   const router = useRouter();
   const { t } = useTranslation();
 
@@ -56,7 +58,15 @@ export const UserCard: React.FC<UserCardProps> = ({ user, onConnect, isPending =
           onPress={() => router.push(`/user/${user.id}`)}
           style={styles.profileBtn}
         />
-        {isPending ? (
+        {isConnected ? (
+          <Button
+            label="Message"
+            variant="primary"
+            size="sm"
+            onPress={onMessage ?? (() => {})}
+            style={styles.connectBtn}
+          />
+        ) : isPending ? (
           <View style={[styles.connectBtn, styles.pendingBtn]}>
             <Ionicons name="time-outline" size={13} color={Colors.textTertiary} />
             <Text style={styles.pendingText}>{t('user_card.pending')}</Text>

@@ -1,8 +1,9 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Platform, StyleSheet, Text } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import * as Haptics from 'expo-haptics';
 import { Colors, FontWeight, Size } from '../../theme';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -21,7 +22,7 @@ const TAB_CONFIG: Array<{
 ];
 
 const ICON_SIZE = 21;
-const LABEL_SIZE = 9.5;
+const LABEL_SIZE = 11;
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -56,6 +57,18 @@ export default function TabLayout() {
           key={tab.name}
           name={tab.name}
           options={{
+            tabBarButton: ({ children, onPress, style }) => (
+              <TouchableOpacity
+                style={style as any}
+                activeOpacity={0.7}
+                onPress={(e) => {
+                  Haptics.selectionAsync().catch(() => {});
+                  onPress?.(e);
+                }}
+              >
+                {children}
+              </TouchableOpacity>
+            ),
             tabBarIcon: ({ focused, color }) => (
               <Ionicons
                 name={focused ? tab.iconFocused : tab.icon}

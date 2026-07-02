@@ -8,6 +8,9 @@ import { ToastHost } from '../components/ui/Toast';
 import i18n, { LANGUAGE_KEY, SUPPORTED_LANGUAGES, type Language } from '../utils/i18n';
 import { useLanguageStore } from '../store/languageStore';
 import { useAuthStore } from '../store/authStore';
+import { useNotificationStore } from '../store/notificationStore';
+import { useMessageStore } from '../store/messageStore';
+import { useConnectionStore } from '../store/connectionStore';
 
 export const unstable_settings = {
   initialRouteName: 'index',
@@ -36,6 +39,13 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
   const restoreSession = useAuthStore((s) => s.restoreSession);
+  const { isAuthenticated, currentUser } = useAuthStore();
+  const subscribeNotifications = useNotificationStore((s) => s.subscribe);
+  const unsubscribeNotifications = useNotificationStore((s) => s.unsubscribe);
+  const subscribeToMessages = useMessageStore((s) => s.subscribeToMessages);
+  const unsubscribeFromMessages = useMessageStore((s) => s.unsubscribeFromMessages);
+  const subscribeToConnectionUpdates = useConnectionStore((s) => s.subscribeToUpdates);
+  const unsubscribeFromConnectionUpdates = useConnectionStore((s) => s.unsubscribeFromUpdates);
 
   useEffect(() => {
     AsyncStorage.getItem(LANGUAGE_KEY).then(async (stored) => {
@@ -52,6 +62,22 @@ export default function RootLayout() {
       setReady(true);
     });
   }, []);
+
+  useEffect(() => {
+    if (ready && isAuthenticated && currentUser) {
+      subscribeNotifications(currentUser.id);
+      subscribeToMessages(currentUser.id);
+      subscribeToConnectionUpdates(currentUser.id);
+    }
+  }, [ready, isAuthenticated, currentUser?.id]);
+
+  useEffect(() => {
+    if (ready && !isAuthenticated) {
+      unsubscribeNotifications();
+      unsubscribeFromMessages();
+      unsubscribeFromConnectionUpdates();
+    }
+  }, [ready, isAuthenticated]);
 
   if (!ready) return null;
 

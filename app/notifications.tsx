@@ -1,11 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Avatar } from '../components/ui/Avatar';
-import { MOCK_NOTIFICATIONS, MOCK_USERS } from '../mock';
+import { useAuthStore } from '../store/authStore';
+import { useNotificationStore } from '../store/notificationStore';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius } from '../theme';
 
 const TYPE_ICON: Record<string, { icon: string; color: string; bg: string }> = {
@@ -17,6 +18,32 @@ const TYPE_ICON: Record<string, { icon: string; color: string; bg: string }> = {
 export default function NotificationsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { currentUser } = useAuthStore();
+  const { notifications, markAllRead, respond } = useNotificationStore();
+  const myId = currentUser?.id ?? '';
+
+  const handleRespond = async (
+    connectionId: string | undefined,
+    actionUserId: string | undefined,
+    status: 'accepted' | 'rejected',
+    notificationId: string,
+  ) => {
+    try {
+      await respond(connectionId, actionUserId, myId, status, notificationId);
+    } catch (e: any) {
+      const isRls = e?.message === 'RLS_BLOCKED';
+      Alert.alert(
+        'Erreur',
+        isRls
+          ? 'Permission refusée. Vérifiez les politiques RLS de Supabase sur la table connections.'
+          : e?.message ?? 'Une erreur est survenue.',
+      );
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser) markAllRead(currentUser.id);
+  }, []);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -30,18 +57,20 @@ export default function NotificationsScreen() {
       </View>
 
       <FlatList
-        data={MOCK_NOTIFICATIONS}
+        data={notifications}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => {
-          const style = TYPE_ICON[item.type];
-          const actor = item.actionUserId
-            ? MOCK_USERS.find((u) => u.id === item.actionUserId)
-            : null;
+          const style = TYPE_ICON[item.type] ?? TYPE_ICON.announcement;
+          const hasActor = !!item.actorInitials;
 
           return (
             <View style={[styles.row, !item.read && styles.rowUnread]}>
-              {actor ? (
-                <Avatar initials={actor.avatarInitials} color={actor.avatarColor} size={44} />
+              {hasActor ? (
+                <Avatar
+                  initials={item.actorInitials!}
+                  color={item.actorColor ?? Colors.primary}
+                  size={44}
+                />
               ) : (
                 <View style={[styles.iconCircle, { backgroundColor: style.bg }]}>
                   <Ionicons name={style.icon as any} size={20} color={style.color} />
@@ -51,10 +80,16 @@ export default function NotificationsScreen() {
                 <Text style={styles.content}>{item.content}</Text>
                 {item.type === 'connection_request' && (
                   <View style={styles.actions}>
-                    <TouchableOpacity style={styles.acceptBtn}>
+                    <TouchableOpacity
+                      style={styles.acceptBtn}
+                      onPress={() => handleRespond(item.connectionId, item.actionUserId, 'accepted', item.id)}
+                    >
                       <Text style={styles.acceptText}>{t('notifications.accept')}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.rejectBtn}>
+                    <TouchableOpacity
+                      style={styles.rejectBtn}
+                      onPress={() => handleRespond(item.connectionId, item.actionUserId, 'rejected', item.id)}
+                    >
                       <Text style={styles.rejectText}>{t('notifications.refuse')}</Text>
                     </TouchableOpacity>
                   </View>
@@ -84,9 +119,9 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.textPrimary },
   closeBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.background,
     alignItems: 'center',
     justifyContent: 'center',

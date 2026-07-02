@@ -10,6 +10,8 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +20,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { FilterSheet } from '../../components/ui/FilterSheet';
 import { useAuthStore } from '../../store/authStore';
+import { productRepository } from '../../repositories/ProductRepository';
+import { getCityCoordinates } from '../../utils/cityCoordinates';
+import countriesData from '../../mock/countries.json';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../../theme';
 
 type PlaceType = 'shop' | 'restaurant';
@@ -68,6 +73,7 @@ export default function AddProductScreen() {
   const [mapsLink, setMapsLink] = useState('');
   const [rating, setRating] = useState(0);
   const [openPicker, setOpenPicker] = useState<'country' | 'city' | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const countryOptions = useMemo(() =>
     COUNTRIES.map((c) => ({ label: c, value: c })),
@@ -93,9 +99,36 @@ export default function AddProductScreen() {
     if (!result.canceled) setPhoto(result.assets[0].uri);
   };
 
-  const handlePublish = () => {
-    // TODO: submit to repository
-    router.back();
+  const handlePublish = async () => {
+    if (!currentUser || !canPublish || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const flag = countriesData.find((c) => c.country === country)?.flag ?? '';
+      const coords = getCityCoordinates(city);
+      await productRepository.addProduct({
+        kind: 'store',
+        title: name,
+        description: placeName,
+        category: type === 'restaurant' ? 'Restaurant' : 'Boutique',
+        tags: [],
+        city,
+        country,
+        countryFlag: flag,
+        cities: [],
+        latitude: coords?.latitude ?? 0,
+        longitude: coords?.longitude ?? 0,
+        address: address.trim() || undefined,
+        website: mapsLink.trim() || undefined,
+        rating: rating > 0 ? rating : undefined,
+        reviewCount: 0,
+        addedBy: currentUser.id,
+      });
+      router.back();
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message ?? 'Une erreur est survenue.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -110,16 +143,20 @@ export default function AddProductScreen() {
         <Text style={styles.headerTitle}>{t('produits.add_title')}</Text>
         <TouchableOpacity
           onPress={handlePublish}
-          style={[styles.publishBtn, !canPublish && styles.publishBtnDisabled]}
-          disabled={!canPublish}
+          style={[styles.publishBtn, (!canPublish || isSubmitting) && styles.publishBtnDisabled]}
+          disabled={!canPublish || isSubmitting}
         >
-          <Text style={[styles.publishText, !canPublish && styles.publishTextDisabled]}>
-            {t('produits.add_publish')}
-          </Text>
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color={Colors.white} />
+          ) : (
+            <Text style={[styles.publishText, !canPublish && styles.publishTextDisabled]}>
+              {t('produits.add_publish')}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scroll}

@@ -17,6 +17,14 @@ function toConnection(row: any): Connection {
     note:       row.note ?? undefined,
     status:     row.status as ConnectionStatus,
     createdAt:  row.created_at,
+    receiverUser: row.receiver ? {
+      id:             row.receiver.id,
+      firstName:      row.receiver.first_name ?? '',
+      lastName:       row.receiver.last_name ?? '',
+      avatarInitials: row.receiver.avatar_initials ?? '',
+      avatarColor:    row.receiver.avatar_color ?? '#2E7D32',
+      nickname:       row.receiver.nickname ?? '',
+    } : undefined,
   };
 }
 
@@ -34,7 +42,7 @@ class ConnectionRepository implements IConnectionRepository {
   async getSentRequests(senderId: string): Promise<Connection[]> {
     const { data, error } = await supabase
       .from('connections')
-      .select('*')
+      .select('*, receiver:profiles!receiver_id(id,first_name,last_name,avatar_initials,avatar_color,nickname)')
       .eq('sender_id', senderId)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -57,6 +65,16 @@ class ConnectionRepository implements IConnectionRepository {
       .from('connections')
       .update({ status })
       .eq('id', connectionId);
+    if (error) throw error;
+  }
+
+  async respondByUsers(senderId: string, receiverId: string, status: 'accepted' | 'rejected'): Promise<void> {
+    const { error } = await supabase
+      .from('connections')
+      .update({ status })
+      .eq('sender_id', senderId)
+      .eq('receiver_id', receiverId)
+      .eq('status', 'pending');
     if (error) throw error;
   }
 

@@ -66,6 +66,9 @@ class ProductRepository implements IProductRepository {
   }
 
   async addProduct(product: Omit<Product, 'id'>): Promise<Product> {
+    // Insert without embed — PostgREST raises a cardinality error when trying to
+    // embed multiple has-many tables (product_items, product_dishes, brand_store_links)
+    // in the same INSERT response. Fetch the full row separately instead.
     const { data, error } = await supabase
       .from('products')
       .insert({
@@ -88,11 +91,13 @@ class ProductRepository implements IProductRepository {
         website:      product.website,
         added_by:     product.addedBy,
       })
-      .select('*, product_items(*), product_dishes(*), brand_store_links(store_id)')
+      .select('id')
       .single();
 
     if (error) throw error;
-    return toProduct(data);
+    const created = await this.getProductById(data.id);
+    if (!created) throw new Error('Failed to fetch created product');
+    return created;
   }
 }
 

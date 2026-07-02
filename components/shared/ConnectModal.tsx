@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -106,9 +106,9 @@ const styles = StyleSheet.create({
   title: { fontSize: FontSize.sm, color: Colors.textSecondary },
   userName: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.textPrimary },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.background,
     alignItems: 'center',
     justifyContent: 'center',
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     padding: Spacing.base,
     fontSize: FontSize.base,
     color: Colors.textPrimary,
-    textAlignVertical: 'top',
+    ...Platform.select({ android: { textAlignVertical: 'top' as const } }),
   },
   sendBtn: { marginTop: Spacing.sm, marginBottom: Spacing.sm },
 });

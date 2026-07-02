@@ -37,6 +37,15 @@ export interface CurrentUser extends User {
 
 export type ConnectionStatus = 'pending' | 'accepted' | 'rejected';
 
+export interface ConnectionUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  avatarInitials: string;
+  avatarColor: string;
+  nickname: string;
+}
+
 export interface Connection {
   id: string;
   senderId: string;
@@ -44,6 +53,7 @@ export interface Connection {
   note?: string;
   status: ConnectionStatus;
   createdAt: string;
+  receiverUser?: ConnectionUser;
 }
 
 // ─── Message ─────────────────────────────────────────────────────────────────
@@ -178,6 +188,9 @@ export interface Notification {
   read: boolean;
   createdAt: string;
   actionUserId?: string;
+  connectionId?: string;
+  actorInitials?: string;
+  actorColor?: string;
 }
 
 // ─── Service / Facture ───────────────────────────────────────────────────────

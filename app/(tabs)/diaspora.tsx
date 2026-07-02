@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -21,9 +21,11 @@ import { ConnectModal } from '../../components/shared/ConnectModal';
 import { Avatar } from '../../components/ui/Avatar';
 import { FilterChip } from '../../components/ui/FilterChip';
 import { FilterSheet, type FilterOption } from '../../components/ui/FilterSheet';
+import { getCityCoordinates } from '../../utils/cityCoordinates';
 import { useAuthStore } from '../../store/authStore';
 import { useDiasporaStore } from '../../store/diasporaStore';
 import { useMessageStore } from '../../store/messageStore';
+import { useNotificationStore } from '../../store/notificationStore';
 import { useConnectionStore } from '../../store/connectionStore';
 import { useToastStore } from '../../store/toastStore';
 import { MOCK_USERS } from '../../mock';
@@ -90,7 +92,8 @@ export default function DiasporaScreen() {
   const router = useRouter();
   const { currentUser } = useAuthStore();
   const { filteredUsers, fetchUsers, filter, setFilter, resetFilter } = useDiasporaStore();
-  const { conversations, fetchConversations } = useMessageStore();
+  const { fetchConversations, totalUnreadMessages } = useMessageStore();
+  const { unreadCount: unreadNotifications } = useNotificationStore();
   const { sentRequests, fetchSentRequests, sendRequest: sendConnectionRequest } = useConnectionStore();
   const showToast = useToastStore((s) => s.show);
   const { t } = useTranslation();
@@ -101,13 +104,16 @@ export default function DiasporaScreen() {
   const [markerUser, setMarkerUser] = useState<User | null>(null);
 
   const pendingIds = useMemo(
-    () => new Set(sentRequests.map((r) => r.receiverId)),
+    () => new Set(sentRequests.filter((r) => r.status === 'pending').map((r) => r.receiverId)),
+    [sentRequests]
+  );
+
+  const acceptedIds = useMemo(
+    () => new Set(sentRequests.filter((r) => r.status === 'accepted').map((r) => r.receiverId)),
     [sentRequests]
   );
 
   const cardAnim = useRef(new Animated.Value(0)).current;
-
-  const totalUnread = conversations.reduce((s, c) => s + c.unreadCount, 0);
 
   useEffect(() => {
     fetchUsers();
@@ -179,15 +185,16 @@ export default function DiasporaScreen() {
   // ── Search ─────────────────────────────────────────────────────────────────
 
   const displayedUsers = useMemo(() => {
-    if (!searchQuery.trim()) return filteredUsers;
+    const withoutSelf = filteredUsers.filter((u) => u.id !== currentUser?.id);
+    if (!searchQuery.trim()) return withoutSelf;
     const q = searchQuery.toLowerCase();
-    return filteredUsers.filter(
+    return withoutSelf.filter(
       (u) =>
         `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) ||
         u.cityOfResidence.toLowerCase().includes(q) ||
         u.workField.toLowerCase().includes(q)
     );
-  }, [filteredUsers, searchQuery]);
+  }, [filteredUsers, searchQuery, currentUser?.id]);
 
   // ── Filter handlers ────────────────────────────────────────────────────────
 
@@ -231,7 +238,7 @@ export default function DiasporaScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
 
-      <AppHeader user={currentUser} notificationCount={3} messageCount={totalUnread} />
+      <AppHeader user={currentUser} notificationCount={unreadNotifications} messageCount={totalUnreadMessages} />
 
       {/* Search */}
       <View style={styles.searchRow}>
@@ -291,12 +298,13 @@ export default function DiasporaScreen() {
       {/* Map */}
       <View style={styles.mapContainer}>
         <ExpandableMap
-          markers={displayedUsers.map((u) => ({
-            id: u.id,
-            latitude: u.latitude,
-            longitude: u.longitude,
-            label: `${u.firstName} ${u.lastName}`,
-          }))}
+          markers={displayedUsers
+            .map((u) => {
+              const coords = getCityCoordinates(u.cityOfResidence);
+              if (!coords) return null;
+              return { id: u.id, latitude: coords.latitude, longitude: coords.longitude, label: `${u.firstName} ${u.lastName}` };
+            })
+            .filter((m): m is NonNullable<typeof m> => m !== null)}
           onMarkerPress={(id) => {
             const user = displayedUsers.find((u) => u.id === id);
             if (user) showMarkerCard(user);
@@ -346,7 +354,7 @@ export default function DiasporaScreen() {
                   {markerUser.cityOfResidence} · {markerUser.workField}
                 </Text>
               </View>
-              <TouchableOpacity onPress={hideMarkerCard} style={styles.markerCardClose}>
+              <TouchableOpacity onPress={hideMarkerCard} style={styles.markerCardClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="close" size={15} color={Colors.textSecondary} />
               </TouchableOpacity>
             </View>
@@ -359,7 +367,20 @@ export default function DiasporaScreen() {
               >
                 <Text style={styles.markerCardBtnOutlineText}>{t('user_card.see_profile')}</Text>
               </TouchableOpacity>
-              {pendingIds.has(markerUser.id) ? (
+              {acceptedIds.has(markerUser.id) ? (
+                <TouchableOpacity
+                  style={styles.markerCardBtnPrimary}
+                  onPress={() => {
+                    hideMarkerCard();
+                    const convId = [currentUser.id, markerUser.id].sort().join('_');
+                    router.push(`/messages/${convId}` as any);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="chatbubble-outline" size={13} color={Colors.white} />
+                  <Text style={styles.markerCardBtnPrimaryText}>Message</Text>
+                </TouchableOpacity>
+              ) : pendingIds.has(markerUser.id) ? (
                 <View style={[styles.markerCardBtnOutline, styles.markerCardBtnPending]}>
                   <Ionicons name="time-outline" size={13} color={Colors.textTertiary} />
                   <Text style={styles.markerCardBtnPendingText}>{t('user_card.pending')}</Text>
@@ -401,7 +422,12 @@ export default function DiasporaScreen() {
           <UserCard
             user={item}
             onConnect={() => setConnectTarget(item)}
+            onMessage={() => {
+              const convId = [currentUser.id, item.id].sort().join('_');
+              router.push(`/messages/${convId}` as any);
+            }}
             isPending={pendingIds.has(item.id)}
+            isConnected={acceptedIds.has(item.id)}
           />
         )}
         showsVerticalScrollIndicator={false}

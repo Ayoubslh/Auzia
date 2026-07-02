@@ -17,12 +17,11 @@ import { NotificationBadge } from '../../components/ui/Badge';
 import { useMessageStore } from '../../store/messageStore';
 import { useConnectionStore } from '../../store/connectionStore';
 import { useAuthStore } from '../../store/authStore';
-import { MOCK_USERS } from '../../mock';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius } from '../../theme';
-import type { Conversation, Connection, User } from '../../types';
+import type { Conversation, Connection, ConnectionUser } from '../../types';
 
 type ListItem =
-  | { kind: 'invite'; connection: Connection; user: User }
+  | { kind: 'invite'; connection: Connection; user: ConnectionUser }
   | { kind: 'conversation'; conversation: Conversation };
 
 export default function MessagesScreen() {
@@ -37,11 +36,8 @@ export default function MessagesScreen() {
   }, [currentUser?.id]);
 
   const invites = sentRequests
-    .map((connection) => {
-      const user = MOCK_USERS.find((u) => u.id === connection.receiverId);
-      return user ? { connection, user } : null;
-    })
-    .filter((item): item is { connection: Connection; user: User } => item !== null);
+    .filter((c) => c.receiverUser != null)
+    .map((c) => ({ connection: c, user: c.receiverUser! }));
 
   const listData: ListItem[] = [
     ...invites.map((i) => ({ kind: 'invite' as const, connection: i.connection, user: i.user })),
@@ -121,7 +117,7 @@ export default function MessagesScreen() {
   );
 }
 
-const InviteRow: React.FC<{ connection: Connection; user: User }> = ({ connection, user }) => (
+const InviteRow: React.FC<{ connection: Connection; user: ConnectionUser }> = ({ connection, user }) => (
   <View style={convStyles.row}>
     <View style={{ position: 'relative' }}>
       <Avatar initials={user.avatarInitials} color={user.avatarColor} size={50} />

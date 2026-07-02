@@ -21,6 +21,7 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { productRepository } from '../../repositories/ProductRepository';
 import { useMessageStore } from '../../store/messageStore';
+import { useNotificationStore } from '../../store/notificationStore';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../../theme';
 import type { Product, ProductItem, Dish, ProductFilter } from '../../types';
 
@@ -64,7 +65,8 @@ const CATEGORY_FILTERS: Array<{ id: CategoryFilter; labelKey: string; emoji?: st
 export default function ProduitsScreen() {
   const router = useRouter();
   const { currentUser } = useAuthStore();
-  const { conversations } = useMessageStore();
+  const { totalUnreadMessages } = useMessageStore();
+  const { unreadCount: unreadNotifications } = useNotificationStore();
   const { t } = useTranslation();
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -73,8 +75,6 @@ export default function ProduitsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [openFilter, setOpenFilter] = useState<'country' | 'city' | null>(null);
   const [infoModal, setInfoModal] = useState<Product | null>(null);
-
-  const totalUnread = conversations.reduce((s, c) => s + c.unreadCount, 0);
 
   useEffect(() => {
     productRepository.getProducts().then(setProducts);
@@ -164,7 +164,7 @@ export default function ProduitsScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
 
-      <AppHeader user={currentUser} notificationCount={3} messageCount={totalUnread} />
+      <AppHeader user={currentUser} notificationCount={unreadNotifications} messageCount={totalUnreadMessages} />
 
       {/* Search */}
       <View style={styles.searchRow}>

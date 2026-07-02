@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -15,11 +16,12 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Button } from '../../components/ui/Button';
 import { ConnectModal } from '../../components/shared/ConnectModal';
 import { userRepository } from '../../repositories/UserRepository';
+import { connectionRepository } from '../../repositories/ConnectionRepository';
 import { useAuthStore } from '../../store/authStore';
 import { useToastStore } from '../../store/toastStore';
 import { useConnectionStore } from '../../store/connectionStore';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../../theme';
-import type { User } from '../../types';
+import type { ConnectionStatus, User } from '../../types';
 
 export default function UserDetailScreen() {
   const router = useRouter();
@@ -27,14 +29,28 @@ export default function UserDetailScreen() {
   const { currentUser } = useAuthStore();
   const { t } = useTranslation();
   const showToast = useToastStore((s) => s.show);
-  const sendConnectionRequest = useConnectionStore((s) => s.sendRequest);
+  const { sendRequest: sendConnectionRequest, sentRequests } = useConnectionStore();
   const insets = useSafeAreaInsets();
   const [user, setUser] = useState<User | null>(null);
   const [connectModalVisible, setConnectModalVisible] = useState(false);
+  const [fetchedStatus, setFetchedStatus] = useState<ConnectionStatus | null>(null);
+
+  // Live status: prefer the store's value for sent requests (updates via Realtime),
+  // fall back to the DB-fetched value for received requests
+  const storeConnection = sentRequests.find((r) => r.receiverId === id);
+  const connectionStatus: ConnectionStatus | null = storeConnection?.status ?? fetchedStatus;
 
   useEffect(() => {
     if (id) userRepository.getUserById(id).then(setUser);
   }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (currentUser && id) {
+        connectionRepository.getStatus(currentUser.id, id).then(setFetchedStatus);
+      }
+    }, [currentUser?.id, id])
+  );
 
   if (!user) return null;
 
@@ -42,9 +58,14 @@ export default function UserDetailScreen() {
     setConnectModalVisible(false);
     if (currentUser) {
       await sendConnectionRequest(currentUser.id, user.id, note);
+      setFetchedStatus('pending');
     }
     showToast(t('user.request_sent', { name: user.firstName }));
   };
+
+  const conversationId = currentUser
+    ? [currentUser.id, user.id].sort().join('_')
+    : null;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -77,16 +98,38 @@ export default function UserDetailScreen() {
             @{user.nickname} · {user.status} · {user.cityOfResidence}
           </Text>
 
-          <View style={styles.ctaRow}>
-            <Button
-              label={t('user.connect_cta')}
-              variant="primary"
-              size="md"
-              onPress={() => setConnectModalVisible(true)}
-              fullWidth
-              style={styles.ctaBtn}
-            />
-          </View>
+          {currentUser?.id !== user.id && (
+            <View style={styles.ctaRow}>
+              {connectionStatus === 'accepted' ? (
+                <Button
+                  label="Message"
+                  variant="primary"
+                  size="md"
+                  onPress={() => conversationId && router.push(`/messages/${conversationId}` as any)}
+                  fullWidth
+                  style={styles.ctaBtn}
+                />
+              ) : connectionStatus === 'pending' ? (
+                <Button
+                  label={t('user_card.pending')}
+                  variant="outline"
+                  size="md"
+                  onPress={() => {}}
+                  fullWidth
+                  style={styles.ctaBtn}
+                />
+              ) : (
+                <Button
+                  label={t('user.connect_cta')}
+                  variant="primary"
+                  size="md"
+                  onPress={() => setConnectModalVisible(true)}
+                  fullWidth
+                  style={styles.ctaBtn}
+                />
+              )}
+            </View>
+          )}
         </View>
 
         <View style={styles.statsRow}>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -41,7 +41,7 @@ export default function OptInfoScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
@@ -136,9 +136,9 @@ const styles = StyleSheet.create({
   backBtn: {
     marginTop: Spacing.sm,
     marginLeft: Spacing.xl,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.background,
     alignItems: 'center',
     justifyContent: 'center',
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
 
   form: { paddingHorizontal: Spacing.xl, gap: Spacing.md },
   input: {},
-  textarea: { minHeight: 90, textAlignVertical: 'top', paddingTop: Spacing.sm },
+  textarea: { minHeight: 90, ...Platform.select({ android: { textAlignVertical: 'top' as const } }), paddingTop: Spacing.sm },
 
   dots: { flexDirection: 'row', gap: 6, marginTop: Spacing.xl, alignSelf: 'center' },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.border },

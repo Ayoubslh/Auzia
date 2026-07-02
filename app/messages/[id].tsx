@@ -16,22 +16,32 @@ import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '../../components/ui/Avatar';
 import { useMessageStore } from '../../store/messageStore';
 import { useAuthStore } from '../../store/authStore';
+import { userRepository } from '../../repositories/UserRepository';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../../theme';
-import type { Message } from '../../types';
+import type { Message, User } from '../../types';
 
 export default function ChatScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { currentUser } = useAuthStore();
-  const { conversations, activeMessages, openConversation, sendMessage } = useMessageStore();
+  const { conversations, activeMessages, fetchConversations, openConversation, closeConversation, sendMessage, markConversationRead } = useMessageStore();
   const [text, setText] = useState('');
+  const [remoteUser, setRemoteUser] = useState<User | null>(null);
   const listRef = useRef<FlatList>(null);
 
   const conversation = conversations.find((c) => c.id === id);
-  const participant = conversation?.participant;
+  const participant = conversation?.participant ?? remoteUser;
 
   useEffect(() => {
-    if (id) openConversation(id);
+    if (!id || !currentUser) return;
+    if (conversations.length === 0) fetchConversations();
+    openConversation(id);
+    const otherId = id.split('_').find((p) => p !== currentUser.id);
+    if (otherId) {
+      markConversationRead(currentUser.id, otherId);
+      userRepository.getUserById(otherId).then((u) => { if (u) setRemoteUser(u); });
+    }
+    return () => { closeConversation(); };
   }, [id]);
 
   useEffect(() => {
@@ -47,7 +57,7 @@ export default function ChatScreen() {
     setText('');
   };
 
-  if (!participant || !currentUser) return null;
+  if (!currentUser) return null;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -59,15 +69,13 @@ export default function ChatScreen() {
           <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
 
-        <Avatar
-          initials={participant.avatarInitials}
-          color={participant.avatarColor}
-          size={38}
-        />
+        {participant && (
+          <Avatar initials={participant.avatarInitials} color={participant.avatarColor} size={38} />
+        )}
 
         <View style={styles.headerInfo}>
           <Text style={styles.headerName}>
-            {participant.firstName} {participant.lastName}
+            {participant ? `${participant.firstName} ${participant.lastName}` : '…'}
           </Text>
           <Text style={styles.headerStatus}>Hors ligne</Text>
         </View>
@@ -93,7 +101,7 @@ export default function ChatScreen() {
           data={activeMessages}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <MessageBubble message={item} isOwn={item.senderId === currentUser.id} participant={participant} />
+            <MessageBubble message={item} isOwn={item.senderId === currentUser.id} participant={participant ?? null} />
           )}
           contentContainerStyle={styles.messagesList}
           showsVerticalScrollIndicator={false}
@@ -127,10 +135,10 @@ export default function ChatScreen() {
 const MessageBubble: React.FC<{
   message: Message;
   isOwn: boolean;
-  participant: any;
+  participant: any | null;
 }> = ({ message, isOwn, participant }) => (
   <View style={[bubbleStyles.row, isOwn && bubbleStyles.rowOwn]}>
-    {!isOwn && (
+    {!isOwn && participant && (
       <Avatar
         initials={participant.avatarInitials}
         color={participant.avatarColor}
@@ -166,9 +174,9 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -207,12 +215,12 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     fontSize: FontSize.base,
     color: Colors.textPrimary,
-    textAlignVertical: 'center',
+    ...Platform.select({ android: { textAlignVertical: 'center' as const } }),
   },
   sendBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',

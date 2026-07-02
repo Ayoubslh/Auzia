@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   Alert,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,14 +16,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
+import { FilterSheet } from '../../components/ui/FilterSheet';
 import { useAuthStore } from '../../store/authStore';
+import { supabase } from '../../supabase/client';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius } from '../../theme';
 import countriesData from '../../mock/countries.json';
 import { getCityCoordinates } from '../../utils/cityCoordinates';
+import { PHONE_CODES, type PhoneCode } from '../../utils/phoneCodes';
 
 const COUNTRY_OPTIONS = countriesData.map((c) => ({
   label: c.country,
   value: c.country,
+  icon: c.flag,
+}));
+
+const CODE_OPTIONS = PHONE_CODES.map((c) => ({
+  label: `${c.label} (${c.code})`,
+  value: c.flag,
   icon: c.flag,
 }));
 
@@ -33,13 +43,31 @@ export default function ReqInfoScreen() {
   const [nickname, setNickname] = useState('');
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
+  const [phone, setPhone] = useState('');
+  const [selectedCode, setSelectedCode] = useState<PhoneCode>(PHONE_CODES[0]);
+  const [codePickerOpen, setCodePickerOpen] = useState(false);
 
   const selectedCountry = countriesData.find((c) => c.country === country);
   const cityOptions = selectedCountry
     ? selectedCountry.cities.map((c) => ({ label: c, value: c }))
     : [];
 
-  const canProceed = nickname.trim() && country.trim() && city.trim();
+  const canProceed = !!(nickname.trim() && country.trim() && city.trim() && phone.trim());
+
+  // Pre-fill phone from register step (stored in Supabase auth metadata)
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const stored = data.user?.user_metadata?.phone_number as string | undefined;
+      if (!stored) return;
+      const match = PHONE_CODES.find((c) => stored.startsWith(c.code));
+      if (match) {
+        setSelectedCode(match);
+        setPhone(stored.slice(match.code.length));
+      } else {
+        setPhone(stored);
+      }
+    });
+  }, []);
 
   const handleCountrySelect = (value: string) => {
     setCountry(value);
@@ -56,6 +84,7 @@ export default function ReqInfoScreen() {
         countryOfResidenceFlag: flag,
         cityOfResidence: city,
         avatarInitials: nickname.trim().slice(0, 2).toUpperCase(),
+        phoneNumber: `${selectedCode.code}${phone.trim()}`,
         ...(coords ?? {}),
       });
       router.push('/onboarding/optinfo' as any);
@@ -67,7 +96,7 @@ export default function ReqInfoScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
@@ -116,6 +145,31 @@ export default function ReqInfoScreen() {
               disabled={!country}
               containerStyle={styles.input}
             />
+
+            {/* Phone with country code picker */}
+            <View style={styles.phoneContainer}>
+              <Text style={styles.phoneLabel}>{t('auth.phone_label')}</Text>
+              <View style={styles.phoneRow}>
+                <TouchableOpacity
+                  style={styles.codeBtn}
+                  onPress={() => setCodePickerOpen(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.codeFlag}>{selectedCode.flag}</Text>
+                  <Text style={styles.codeText}>{selectedCode.code}</Text>
+                  <Ionicons name="chevron-down" size={13} color={Colors.textTertiary} />
+                </TouchableOpacity>
+                <View style={styles.phoneDivider} />
+                <TextInput
+                  style={styles.phoneInput}
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  placeholder={t('auth.phone_placeholder')}
+                  placeholderTextColor={Colors.textTertiary}
+                />
+              </View>
+            </View>
           </View>
 
           <View style={styles.dots}>
@@ -134,6 +188,19 @@ export default function ReqInfoScreen() {
           <Text style={styles.nextText}>{t('common.next')}</Text>
         </TouchableOpacity>
       </KeyboardAvoidingView>
+
+      <FilterSheet
+        visible={codePickerOpen}
+        title={t('auth.phone_code_picker_title')}
+        options={CODE_OPTIONS}
+        value={selectedCode.flag}
+        onSelect={(flag) => {
+          const found = PHONE_CODES.find((c) => c.flag === flag);
+          if (found) setSelectedCode(found);
+          setCodePickerOpen(false);
+        }}
+        onClose={() => setCodePickerOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -145,9 +212,9 @@ const styles = StyleSheet.create({
   backBtn: {
     marginTop: Spacing.sm,
     marginLeft: Spacing.xl,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.background,
     alignItems: 'center',
     justifyContent: 'center',
@@ -187,6 +254,46 @@ const styles = StyleSheet.create({
   },
   input: {},
 
+  phoneContainer: { gap: Spacing.xs },
+  phoneLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semibold,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.white,
+    minHeight: 48,
+    overflow: 'hidden',
+  },
+  codeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  codeFlag: { fontSize: 18 },
+  codeText: {
+    fontSize: FontSize.base,
+    fontWeight: FontWeight.medium,
+    color: Colors.textPrimary,
+  },
+  phoneDivider: { width: 1, height: 28, backgroundColor: Colors.border },
+  phoneInput: {
+    flex: 1,
+    fontSize: FontSize.base,
+    color: Colors.textPrimary,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+  },
+
   dots: { flexDirection: 'row', gap: 6, marginTop: Spacing.xl, alignSelf: 'center' },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.border },
   dotActive: { width: 20, backgroundColor: Colors.primary },
@@ -201,5 +308,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   nextBtnDisabled: { opacity: 0.5 },
-  nextText: { fontSize: FontSize.md, fontWeight: FontWeight.semibold, color: Colors.white },
+  nextText: { fontSize: FontSize.md, fontWeight: FontWeight.medium, color: Colors.white },
 });
