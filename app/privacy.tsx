@@ -1,55 +1,70 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  StatusBar,
   Switch,
+  StatusBar,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/authStore';
 import { useToastStore } from '../store/toastStore';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../theme';
 
 export default function PrivacyScreen() {
   const router = useRouter();
-  const { logout } = useAuthStore();
+  const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+  const { currentUser, updateProfile, logout } = useAuthStore();
   const showToast = useToastStore((s) => s.show);
 
-  const [publicProfile, setPublicProfile] = useState(true);
-  const [showOnMap, setShowOnMap] = useState(true);
-  const [emailNotifs, setEmailNotifs] = useState(true);
-  const [pushNotifs, setPushNotifs] = useState(true);
+  const [showOnMap, setShowOnMap] = useState(currentUser?.showOnMap ?? true);
+  const [allowChat, setAllowChat] = useState(currentUser?.allowChat ?? true);
+  const [nameMode, setNameMode] = useState<'nickname' | 'fullname'>(
+    currentUser?.nameDisplayMode ?? 'nickname'
+  );
+
+  if (!currentUser) return null;
+
+  const save = async (patch: Parameters<typeof updateProfile>[0]) => {
+    try { await updateProfile(patch); } catch { /* silent */ }
+  };
+
+  const handleShowOnMap = (val: boolean) => {
+    setShowOnMap(val);
+    save({ showOnMap: val });
+  };
+
+  const handleAllowChat = (val: boolean) => {
+    setAllowChat(val);
+    save({ allowChat: val });
+  };
+
+  const handleNameMode = (val: 'nickname' | 'fullname') => {
+    setNameMode(val);
+    save({ nameDisplayMode: val });
+  };
 
   const handleDeleteAccount = () => {
     Alert.alert(
       'Supprimer mon compte',
       'Cette action est irréversible. Toutes vos données seront définitivement supprimées.',
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
           text: 'Supprimer',
           style: 'destructive',
-          onPress: () => {
-            logout();
-            router.replace('/auth/login' as any);
-          },
+          onPress: () => { logout(); router.replace('/auth/login' as any); },
         },
       ]
     );
-  };
-
-  const handleDownloadData = () => {
-    showToast('Vos données vous seront envoyées par email sous 48h');
-  };
-
-  const handleChangePassword = () => {
-    showToast('Un lien de réinitialisation a été envoyé à votre email');
   };
 
   return (
@@ -57,112 +72,120 @@ export default function PrivacyScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
 
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={20} color={Colors.textPrimary} />
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
+          <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.title}>Confidentialité & sécurité</Text>
+        <Text style={styles.headerTitle}>{t('privacy.title')}</Text>
         <View style={styles.backBtn} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <Section title="VISIBILITÉ">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.scroll, { paddingBottom: Spacing.xxl + insets.bottom }]}
+      >
+        {/* Visibility */}
+        <Text style={styles.sectionLabel}>{t('privacy.section_visibility')}</Text>
+        <View style={styles.card}>
           <ToggleRow
-            label="Profil visible publiquement"
-            description="Les autres membres peuvent voir votre profil"
-            value={publicProfile}
-            onChange={setPublicProfile}
-          />
-          <View style={styles.divider} />
-          <ToggleRow
-            label="Afficher ma position sur la carte"
-            description="Votre ville apparaît sur la carte de la diaspora"
+            icon="map-outline"
+            iconBg="#F0FDF4"
+            iconColor="#16A34A"
+            title={t('privacy.show_on_map')}
+            subtitle={t('privacy.show_on_map_sub')}
             value={showOnMap}
-            onChange={setShowOnMap}
-          />
-        </Section>
-
-        <Section title="NOTIFICATIONS">
-          <ToggleRow
-            label="Notifications par email"
-            description="Recevez des mises à jour par email"
-            value={emailNotifs}
-            onChange={setEmailNotifs}
+            onValueChange={handleShowOnMap}
           />
           <View style={styles.divider} />
           <ToggleRow
-            label="Notifications push"
-            description="Recevez des alertes sur votre appareil"
-            value={pushNotifs}
-            onChange={setPushNotifs}
+            icon="chatbubble-outline"
+            iconBg={Colors.primaryLight}
+            iconColor={Colors.primary}
+            title={t('privacy.allow_chat')}
+            subtitle={t('privacy.allow_chat_sub')}
+            value={allowChat}
+            onValueChange={handleAllowChat}
           />
-        </Section>
+        </View>
 
-        <Section title="COMPTE">
-          <ActionRow
-            icon="key-outline"
-            label="Changer le mot de passe"
-            onPress={handleChangePassword}
+        {/* Name display */}
+        <Text style={styles.sectionLabel}>{t('privacy.section_name')}</Text>
+        <View style={styles.card}>
+          <SelectRow
+            icon="at-outline"
+            iconBg="#FFF7ED"
+            iconColor="#EA580C"
+            title={t('privacy.name_nickname')}
+            subtitle={t('privacy.name_nickname_sub')}
+            selected={nameMode === 'nickname'}
+            onPress={() => handleNameMode('nickname')}
           />
           <View style={styles.divider} />
-          <ActionRow
-            icon="download-outline"
-            label="Télécharger mes données"
-            onPress={handleDownloadData}
+          <SelectRow
+            icon="person-outline"
+            iconBg={Colors.badgeBlueBg}
+            iconColor={Colors.badgeBlue}
+            title={t('privacy.name_fullname')}
+            subtitle={t('privacy.name_fullname_sub')}
+            selected={nameMode === 'fullname'}
+            onPress={() => handleNameMode('fullname')}
           />
-        </Section>
+        </View>
 
-        <Section title="ZONE DE DANGER">
-          <ActionRow
-            icon="trash-outline"
-            label="Supprimer mon compte"
-            danger
-            onPress={handleDeleteAccount}
-          />
-        </Section>
+        {/* Danger zone */}
+        <Text style={styles.sectionLabel}>COMPTE</Text>
+        <View style={styles.card}>
+          <TouchableOpacity style={styles.row} onPress={handleDeleteAccount} activeOpacity={0.7}>
+            <View style={[styles.iconWrap, { backgroundColor: '#FEF2F2' }]}>
+              <Ionicons name="trash-outline" size={18} color={Colors.error} />
+            </View>
+            <Text style={[styles.rowTitle, { color: Colors.error }]}>Supprimer mon compte</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <View style={styles.section}>
-    <Text style={styles.sectionTitle}>{title}</Text>
-    <View style={styles.sectionCard}>{children}</View>
-  </View>
-);
-
 const ToggleRow: React.FC<{
-  label: string;
-  description: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
-}> = ({ label, description, value, onChange }) => (
-  <View style={styles.toggleRow}>
-    <View style={styles.toggleText}>
-      <Text style={styles.toggleLabel}>{label}</Text>
-      <Text style={styles.toggleDesc}>{description}</Text>
+  icon: string; iconBg: string; iconColor: string;
+  title: string; subtitle: string;
+  value: boolean; onValueChange: (v: boolean) => void;
+}> = ({ icon, iconBg, iconColor, title, subtitle, value, onValueChange }) => (
+  <View style={styles.row}>
+    <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
+      <Ionicons name={icon as any} size={18} color={iconColor} />
+    </View>
+    <View style={styles.rowText}>
+      <Text style={styles.rowTitle}>{title}</Text>
+      <Text style={styles.rowSubtitle}>{subtitle}</Text>
     </View>
     <Switch
       value={value}
-      onValueChange={onChange}
+      onValueChange={onValueChange}
       trackColor={{ false: Colors.border, true: Colors.primary }}
       thumbColor={Colors.white}
+      ios_backgroundColor={Colors.border}
+      style={Platform.OS === 'android' ? { transform: [{ scale: 0.9 }] } : undefined}
     />
   </View>
 );
 
-const ActionRow: React.FC<{
-  icon: string;
-  label: string;
-  danger?: boolean;
-  onPress: () => void;
-}> = ({ icon, label, danger, onPress }) => (
-  <TouchableOpacity style={styles.actionRow} onPress={onPress} activeOpacity={0.7}>
-    <Ionicons name={icon as any} size={18} color={danger ? Colors.error : Colors.textSecondary} />
-    <Text style={[styles.actionLabel, danger && styles.actionLabelDanger]}>{label}</Text>
-    {!danger && (
-      <Ionicons name="chevron-forward" size={16} color={Colors.textTertiary} style={styles.actionChevron} />
-    )}
+const SelectRow: React.FC<{
+  icon: string; iconBg: string; iconColor: string;
+  title: string; subtitle: string;
+  selected: boolean; onPress: () => void;
+}> = ({ icon, iconBg, iconColor, title, subtitle, selected, onPress }) => (
+  <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
+    <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
+      <Ionicons name={icon as any} size={18} color={iconColor} />
+    </View>
+    <View style={styles.rowText}>
+      <Text style={styles.rowTitle}>{title}</Text>
+      <Text style={styles.rowSubtitle}>{subtitle}</Text>
+    </View>
+    <View style={[styles.radio, selected && styles.radioSelected]}>
+      {selected && <View style={styles.radioDot} />}
+    </View>
   </TouchableOpacity>
 );
 
@@ -179,63 +202,31 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderLight,
   },
-  backBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: Colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: FontSize.md,
-    fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
-  },
+  backBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.textPrimary },
 
-  scroll: { padding: Spacing.xl, paddingBottom: Spacing.xxxl, gap: Spacing.lg },
+  scroll: { padding: Spacing.base, gap: Spacing.xs },
 
-  section: { gap: Spacing.sm },
-  sectionTitle: {
+  sectionLabel: {
     fontSize: FontSize.xs,
     fontWeight: FontWeight.semibold,
     color: Colors.textTertiary,
     letterSpacing: 0.8,
+    marginTop: Spacing.base,
+    marginBottom: Spacing.xs,
     marginLeft: Spacing.xs,
   },
-  sectionCard: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    ...Shadow.sm,
-  },
-  divider: { height: 1, backgroundColor: Colors.borderLight, marginLeft: Spacing.base },
 
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    padding: Spacing.base,
-  },
-  toggleText: { flex: 1, gap: 2 },
-  toggleLabel: {
-    fontSize: FontSize.base,
-    fontWeight: FontWeight.medium,
-    color: Colors.textPrimary,
-  },
-  toggleDesc: { fontSize: FontSize.xs, color: Colors.textTertiary },
+  card: { backgroundColor: Colors.white, borderRadius: BorderRadius.lg, ...Shadow.sm },
+  divider: { height: 1, backgroundColor: Colors.borderLight, marginLeft: Spacing.base + 32 + Spacing.md },
 
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    padding: Spacing.base,
-  },
-  actionLabel: {
-    flex: 1,
-    fontSize: FontSize.base,
-    fontWeight: FontWeight.medium,
-    color: Colors.textPrimary,
-  },
-  actionLabelDanger: { color: Colors.error },
-  actionChevron: { marginLeft: 'auto' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.base },
+  iconWrap: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  rowText: { flex: 1 },
+  rowTitle: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.textPrimary },
+  rowSubtitle: { fontSize: FontSize.sm, color: Colors.textTertiary, marginTop: 1 },
+
+  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
+  radioSelected: { borderColor: Colors.primary },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.primary },
 });

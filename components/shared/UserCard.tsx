@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
+import { getDisplayName } from '../../utils/displayName';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../../theme';
 import type { User } from '../../types';
 
@@ -27,7 +28,7 @@ export const UserCard: React.FC<UserCardProps> = ({ user, onConnect, onMessage, 
 
         <View style={styles.headerInfo}>
           <View style={styles.nameRow}>
-            <Text style={styles.name}>{user.firstName} {user.lastName}</Text>
+            <Text style={styles.name}>{getDisplayName(user)}</Text>
             <Text style={styles.flag}>{user.countryOfResidenceFlag}</Text>
           </View>
           <Text style={styles.status}>{user.status}</Text>
@@ -58,7 +59,7 @@ export const UserCard: React.FC<UserCardProps> = ({ user, onConnect, onMessage, 
           onPress={() => router.push(`/user/${user.id}`)}
           style={styles.profileBtn}
         />
-        {isConnected ? (
+        {isConnected && user.allowChat ? (
           <Button
             label="Message"
             variant="primary"
@@ -66,6 +67,11 @@ export const UserCard: React.FC<UserCardProps> = ({ user, onConnect, onMessage, 
             onPress={onMessage ?? (() => {})}
             style={styles.connectBtn}
           />
+        ) : isConnected && !user.allowChat ? (
+          <View style={[styles.connectBtn, styles.pendingBtn]}>
+            <Ionicons name="lock-closed-outline" size={13} color={Colors.textTertiary} />
+            <Text style={styles.pendingText}>Désactivé</Text>
+          </View>
         ) : isPending ? (
           <View style={[styles.connectBtn, styles.pendingBtn]}>
             <Ionicons name="time-outline" size={13} color={Colors.textTertiary} />

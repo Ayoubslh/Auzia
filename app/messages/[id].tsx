@@ -17,6 +17,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { useMessageStore } from '../../store/messageStore';
 import { useAuthStore } from '../../store/authStore';
 import { userRepository } from '../../repositories/UserRepository';
+import { getDisplayName } from '../../utils/displayName';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../../theme';
 import type { Message, User } from '../../types';
 
@@ -75,7 +76,7 @@ export default function ChatScreen() {
 
         <View style={styles.headerInfo}>
           <Text style={styles.headerName}>
-            {participant ? `${participant.firstName} ${participant.lastName}` : '…'}
+            {participant ? getDisplayName(participant) : '…'}
           </Text>
           <Text style={styles.headerStatus}>Hors ligne</Text>
         </View>

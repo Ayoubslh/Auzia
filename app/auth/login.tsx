@@ -20,18 +20,20 @@ import { supabase } from '../../supabase/client';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useAuthStore } from '../../store/authStore';
+import { requireConnection } from '../../utils/network';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../../theme';
 
 
 export default function LoginScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { login, loginWithGoogle } = useAuthStore();
+  const { login } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (!(await requireConnection('Pas de connexion internet'))) return;
     try {
       setLoading(true);
       await login(email, password);
@@ -49,6 +51,7 @@ export default function LoginScreen() {
   };
 
   const handleGoogle = async () => {
+    if (!(await requireConnection('Pas de connexion internet'))) return;
     const redirectUrl = Linking.createURL('auth/callback');
     try {
       setLoading(true);
@@ -62,21 +65,11 @@ export default function LoginScreen() {
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
       if (result.type !== 'success') return;
 
-      // Extract the authorization code from the redirect URL — passing the full
-      // URL to exchangeCodeForSession sends it as the code, which the server rejects
       const parsed = Linking.parse(result.url);
       const code = parsed.queryParams?.code as string | undefined;
       if (!code) throw new Error('No authorization code in redirect URL');
-      const { error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
-      if (sessionError) throw sessionError;
 
-      await loginWithGoogle();
-      const { hasCompletedOnboarding } = useAuthStore.getState();
-      if (hasCompletedOnboarding) {
-        router.replace('/(tabs)/diaspora');
-      } else {
-        router.replace('/onboarding/welcome' as any);
-      }
+      router.replace(`/auth/callback?code=${encodeURIComponent(code)}` as any);
     } catch (e: any) {
       Alert.alert('Erreur Google', e.message ?? 'Connexion Google échouée');
     } finally {

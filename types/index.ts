@@ -27,6 +27,9 @@ export interface User {
   longitude: number;
   isLookingForOpportunities?: boolean;
   commonConnections?: number;
+  showOnMap: boolean;
+  allowChat: boolean;
+  nameDisplayMode: 'nickname' | 'fullname';
 }
 
 export interface CurrentUser extends User {
@@ -44,6 +47,7 @@ export interface ConnectionUser {
   avatarInitials: string;
   avatarColor: string;
   nickname: string;
+  nameDisplayMode: 'nickname' | 'fullname';
 }
 
 export interface Connection {

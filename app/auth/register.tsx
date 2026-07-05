@@ -23,6 +23,7 @@ import { Button } from '../../components/ui/Button';
 import { FilterSheet } from '../../components/ui/FilterSheet';
 import { useAuthStore } from '../../store/authStore';
 import { PHONE_CODES, type PhoneCode } from '../../utils/phoneCodes';
+import { requireConnection } from '../../utils/network';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../../theme';
 
 const CODE_OPTIONS = PHONE_CODES.map((c) => ({
@@ -34,7 +35,7 @@ const CODE_OPTIONS = PHONE_CODES.map((c) => ({
 export default function RegisterScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { register, loginWithGoogle } = useAuthStore();
+  const { register } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -56,6 +57,7 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!validate()) return;
+    if (!(await requireConnection('Pas de connexion internet'))) return;
     setLoading(true);
     const fullPhone = phone.trim() ? `${selectedCode.code}${phone.trim()}` : undefined;
     try {
@@ -77,6 +79,7 @@ export default function RegisterScreen() {
   };
 
   const handleGoogle = async () => {
+    if (!(await requireConnection('Pas de connexion internet'))) return;
     const redirectUrl = Linking.createURL('auth/callback');
     try {
       setLoading(true);
@@ -93,16 +96,8 @@ export default function RegisterScreen() {
       const parsed = Linking.parse(result.url);
       const code = parsed.queryParams?.code as string | undefined;
       if (!code) throw new Error('No authorization code in redirect URL');
-      const { error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
-      if (sessionError) throw sessionError;
 
-      await loginWithGoogle();
-      const { hasCompletedOnboarding } = useAuthStore.getState();
-      if (hasCompletedOnboarding) {
-        router.replace('/(tabs)/diaspora');
-      } else {
-        router.replace('/onboarding/welcome' as any);
-      }
+      router.replace(`/auth/callback?code=${encodeURIComponent(code)}` as any);
     } catch (e: any) {
       Alert.alert('Erreur Google', e.message ?? 'Inscription Google échouée');
     } finally {

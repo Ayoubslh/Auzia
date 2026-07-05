@@ -17,6 +17,7 @@ import { NotificationBadge } from '../../components/ui/Badge';
 import { useMessageStore } from '../../store/messageStore';
 import { useConnectionStore } from '../../store/connectionStore';
 import { useAuthStore } from '../../store/authStore';
+import { getDisplayName } from '../../utils/displayName';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius } from '../../theme';
 import type { Conversation, Connection, ConnectionUser } from '../../types';
 
@@ -126,7 +127,7 @@ const InviteRow: React.FC<{ connection: Connection; user: ConnectionUser }> = ({
     <View style={convStyles.info}>
       <View style={convStyles.topRow}>
         <Text style={convStyles.name}>
-          {user.firstName} {user.lastName}
+          {getDisplayName(user)}
         </Text>
         <View style={convStyles.pendingTag}>
           <Text style={convStyles.pendingTagText}>En attente</Text>
@@ -161,7 +162,7 @@ const ConversationRow: React.FC<{ conversation: Conversation }> = ({ conversatio
       <View style={convStyles.info}>
         <View style={convStyles.topRow}>
           <Text style={convStyles.name}>
-            {participant.firstName} {participant.lastName}
+            {getDisplayName(participant)}
           </Text>
           <Text style={convStyles.time}>{lastMessage.timestamp}</Text>
         </View>

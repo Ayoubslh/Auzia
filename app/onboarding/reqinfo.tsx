@@ -9,6 +9,7 @@ import {
   ScrollView,
   Alert,
   TextInput,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +20,7 @@ import { Select } from '../../components/ui/Select';
 import { FilterSheet } from '../../components/ui/FilterSheet';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../supabase/client';
+import { showAvatarPicker, uploadAvatar } from '../../utils/imagePicker';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius } from '../../theme';
 import countriesData from '../../mock/countries.json';
 import { getCityCoordinates } from '../../utils/cityCoordinates';
@@ -40,19 +42,22 @@ export default function ReqInfoScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { updateProfile } = useAuthStore();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [nickname, setNickname] = useState('');
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [phone, setPhone] = useState('');
   const [selectedCode, setSelectedCode] = useState<PhoneCode>(PHONE_CODES[0]);
   const [codePickerOpen, setCodePickerOpen] = useState(false);
+  const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
 
   const selectedCountry = countriesData.find((c) => c.country === country);
   const cityOptions = selectedCountry
     ? selectedCountry.cities.map((c) => ({ label: c, value: c }))
     : [];
 
-  const canProceed = !!(nickname.trim() && country.trim() && city.trim() && phone.trim());
+  const canProceed = !!(firstName.trim() && lastName.trim() && nickname.trim() && country.trim() && city.trim() && phone.trim());
 
   // Pre-fill phone from register step (stored in Supabase auth metadata)
   useEffect(() => {
@@ -77,14 +82,24 @@ export default function ReqInfoScreen() {
   const handleNext = async () => {
     const flag = countriesData.find((c) => c.country === country)?.flag ?? '';
     const coords = getCityCoordinates(city);
+    const initials = `${firstName.trim()[0] ?? ''}${lastName.trim()[0] ?? ''}`.toUpperCase() || nickname.trim().slice(0, 2).toUpperCase();
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      let avatarUrl: string | undefined;
+      if (localAvatarUri && userId) {
+        avatarUrl = await uploadAvatar(userId, localAvatarUri);
+      }
       await updateProfile({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         nickname: nickname.trim(),
         countryOfResidence: country,
         countryOfResidenceFlag: flag,
         cityOfResidence: city,
-        avatarInitials: nickname.trim().slice(0, 2).toUpperCase(),
+        avatarInitials: initials,
         phoneNumber: `${selectedCode.code}${phone.trim()}`,
+        avatar: avatarUrl,
         ...(coords ?? {}),
       });
       router.push('/onboarding/optinfo' as any);
@@ -109,16 +124,43 @@ export default function ReqInfoScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.avatarSection}>
-            <View style={styles.avatarCircle}>
-              <Ionicons name="camera-outline" size={28} color={Colors.textTertiary} />
+            <TouchableOpacity
+              style={styles.avatarCircle}
+              onPress={() => showAvatarPicker(setLocalAvatarUri)}
+              activeOpacity={0.8}
+            >
+              {localAvatarUri ? (
+                <Image source={{ uri: localAvatarUri }} style={styles.avatarImage} />
+              ) : (
+                <Ionicons name="camera-outline" size={28} color={Colors.textTertiary} />
+              )}
               <View style={styles.addBadge}>
-                <Ionicons name="add" size={12} color={Colors.white} />
+                <Ionicons name={localAvatarUri ? 'pencil' : 'add'} size={12} color={Colors.white} />
               </View>
-            </View>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.formSection}>
             <Text style={styles.title}>{t('onboarding.reqinfo_title')}</Text>
+
+            <View style={styles.nameRow}>
+              <Input
+                label={t('onboarding.firstname_label')}
+                value={firstName}
+                onChangeText={setFirstName}
+                placeholder={t('onboarding.firstname_placeholder')}
+                autoCapitalize="words"
+                containerStyle={styles.nameInput}
+              />
+              <Input
+                label={t('onboarding.lastname_label')}
+                value={lastName}
+                onChangeText={setLastName}
+                placeholder={t('onboarding.lastname_placeholder')}
+                autoCapitalize="words"
+                containerStyle={styles.nameInput}
+              />
+            </View>
 
             <Input
               label={t('onboarding.pseudo_label')}
@@ -230,7 +272,9 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
+  avatarImage: { width: 80, height: 80, borderRadius: 40 },
   addBadge: {
     position: 'absolute',
     bottom: 2,
@@ -246,6 +290,8 @@ const styles = StyleSheet.create({
   },
 
   formSection: { paddingHorizontal: Spacing.xl, gap: Spacing.md },
+  nameRow: { flexDirection: 'row', gap: Spacing.sm },
+  nameInput: { flex: 1 },
   title: {
     fontSize: FontSize.xxl,
     fontWeight: FontWeight.bold,

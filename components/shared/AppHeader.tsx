@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '../ui/Avatar';
 import { NotificationBadge } from '../ui/Badge';
 import { Colors, FontSize, FontWeight, Spacing } from '../../theme';
+import { getDisplayName } from '../../utils/displayName';
 import type { User } from '../../types';
 
 interface AppHeaderProps {
@@ -35,7 +36,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         />
         <View style={styles.userInfo}>
           <Text style={styles.userName}>
-            {user.firstName} {user.lastName}
+            {getDisplayName(user)}
           </Text>
           <Text style={styles.userLocation}>
             {user.cityOfResidence}, {user.countryOfResidence}{' '}

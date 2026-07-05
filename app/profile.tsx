@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,13 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Avatar } from '../components/ui/Avatar';
+import { getDisplayName } from '../utils/displayName';
 import { FilterSheet } from '../components/ui/FilterSheet';
 import { useAuthStore } from '../store/authStore';
 import { useLanguageStore } from '../store/languageStore';
+import { useToastStore } from '../store/toastStore';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../theme';
+import { showAvatarPicker, uploadAvatar } from '../utils/imagePicker';
 import type { Language } from '../utils/i18n';
 
 const LANGUAGE_OPTIONS = [
@@ -29,11 +32,28 @@ export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const { currentUser, logout } = useAuthStore();
+  const { currentUser, updateProfile, logout } = useAuthStore();
   const { language, setLanguage } = useLanguageStore();
+  const showToast = useToastStore((s) => s.show);
   const [languageSheetOpen, setLanguageSheetOpen] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   if (!currentUser) return null;
+
+  const handleEditAvatar = () => {
+    showAvatarPicker(async (uri) => {
+      setUploadingAvatar(true);
+      try {
+        const url = await uploadAvatar(currentUser.id, uri);
+        await updateProfile({ avatar: url });
+        showToast('Photo de profil mise à jour');
+      } catch {
+        showToast('Erreur lors du téléchargement');
+      } finally {
+        setUploadingAvatar(false);
+      }
+    });
+  };
 
   const openLinkedin = () => {
     const url = currentUser.linkedin!.startsWith('http')
@@ -57,8 +77,8 @@ export default function ProfileScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.white} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.editBtn}>
-          <Ionicons name="create-outline" size={20} color={Colors.white} />
+        <TouchableOpacity style={styles.editBtn} onPress={handleEditAvatar} activeOpacity={0.8}>
+          <Ionicons name={uploadingAvatar ? 'hourglass-outline' : 'camera-outline'} size={20} color={Colors.white} />
         </TouchableOpacity>
       </View>
 
@@ -73,6 +93,7 @@ export default function ProfileScreen() {
               initials={currentUser.avatarInitials}
               color={currentUser.avatarColor}
               size={72}
+              imageUrl={currentUser.avatar}
               showBorder
             />
           </View>
@@ -80,7 +101,7 @@ export default function ProfileScreen() {
 
         <View style={styles.identity}>
           <Text style={styles.name}>
-            {currentUser.firstName} {currentUser.lastName}{' '}
+            {getDisplayName(currentUser)}{' '}
             {currentUser.countryOfResidenceFlag}
           </Text>
           <Text style={styles.handle}>

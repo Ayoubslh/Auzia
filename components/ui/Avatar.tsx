@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors, FontSize, FontWeight, BorderRadius } from '../../theme';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { Colors, FontWeight } from '../../theme';
 
 interface AvatarProps {
   initials: string;
   color?: string;
   size?: number;
+  imageUrl?: string;
   onPress?: () => void;
   showBorder?: boolean;
 }
@@ -14,25 +15,30 @@ export const Avatar: React.FC<AvatarProps> = ({
   initials,
   color = Colors.primary,
   size = 40,
+  imageUrl,
   onPress,
   showBorder = false,
 }) => {
   const fontSize = size * 0.35;
+  const radius = size / 2;
 
   const inner = (
     <View
       style={[
         styles.avatar,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: color,
-        },
+        { width: size, height: size, borderRadius: radius, backgroundColor: color },
         showBorder && styles.border,
       ]}
     >
-      <Text style={[styles.initials, { fontSize }]}>{initials}</Text>
+      {imageUrl ? (
+        <Image
+          source={{ uri: imageUrl }}
+          style={{ width: size, height: size, borderRadius: radius }}
+          resizeMode="cover"
+        />
+      ) : (
+        <Text style={[styles.initials, { fontSize }]}>{initials}</Text>
+      )}
     </View>
   );
 

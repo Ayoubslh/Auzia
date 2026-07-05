@@ -51,7 +51,8 @@
     "check_email_title": "Vérifiez votre e-mail",
     "check_email_message": "Un lien de confirmation a été envoyé à votre adresse e-mail. Cliquez dessus puis connectez-vous.",
     "phone_label": "NUMÉRO DE TÉLÉPHONE",
-    "phone_placeholder": "+33 6 XX XX XX XX"
+    "phone_placeholder": "6 XX XX XX XX",
+    "phone_code_picker_title": "Indicatif téléphonique"
   },
   "onboarding": {
     "welcome_arabic": "مرحبا بكم",
@@ -70,6 +71,10 @@
     "feature_announces_title": "Annonces",
     "feature_announces_desc": "Événements, réductions et offres de la communauté",
     "reqinfo_title": "Informations requises",
+    "firstname_label": "PRÉNOM",
+    "firstname_placeholder": "Karim",
+    "lastname_label": "NOM",
+    "lastname_placeholder": "Benali",
     "pseudo_label": "PSEUDO / SURNOM",
     "pseudo_placeholder": "Ex: kbenali",
     "country_label": "PAYS DE RÉSIDENCE",
@@ -204,6 +209,19 @@
     "language_setting": "Langue",
     "logout": "Se déconnecter"
   },
+  "privacy": {
+    "title": "Confidentialité",
+    "section_visibility": "VISIBILITÉ",
+    "show_on_map": "Apparaître sur la carte",
+    "show_on_map_sub": "Votre marqueur est visible sur la carte diaspora",
+    "allow_chat": "Autoriser les messages",
+    "allow_chat_sub": "Les membres connectés peuvent vous écrire",
+    "section_name": "NOM AFFICHÉ AUX AUTRES",
+    "name_nickname": "Pseudonyme",
+    "name_nickname_sub": "Seul votre surnom est affiché",
+    "name_fullname": "Nom complet",
+    "name_fullname_sub": "Prénom et nom de famille visibles"
+  },
   "notifications": {
     "title": "Notifications",
     "accept": "Accepter",
@@ -234,7 +252,20 @@
     "info_section": "INFORMATIONS",
     "field_domain": "DOMAINE",
     "field_origin": "ORIGINE",
-    "field_residence": "RÉSIDENCE"
+    "field_residence": "RÉSIDENCE",
+    "report": "Signaler",
+    "block": "Bloquer",
+    "block_confirm_title": "Bloquer {{name}} ?",
+    "block_confirm_msg": "Vous ne verrez plus son profil et il ne pourra plus vous contacter.",
+    "block_confirm_action": "Bloquer",
+    "blocked_toast": "Utilisateur bloqué",
+    "report_title": "Signaler ce profil",
+    "report_reason_spam": "Spam ou arnaque",
+    "report_reason_inappropriate": "Contenu inapproprié",
+    "report_reason_harassment": "Harcèlement",
+    "report_reason_fake": "Faux profil",
+    "report_reason_other": "Autre",
+    "report_sent": "Signalement envoyé. Merci."
   },
   "connect_modal": {
     "title": "Se connecter avec",

@@ -18,12 +18,13 @@ function toConnection(row: any): Connection {
     status:     row.status as ConnectionStatus,
     createdAt:  row.created_at,
     receiverUser: row.receiver ? {
-      id:             row.receiver.id,
-      firstName:      row.receiver.first_name ?? '',
-      lastName:       row.receiver.last_name ?? '',
-      avatarInitials: row.receiver.avatar_initials ?? '',
-      avatarColor:    row.receiver.avatar_color ?? '#2E7D32',
-      nickname:       row.receiver.nickname ?? '',
+      id:              row.receiver.id,
+      firstName:       row.receiver.first_name ?? '',
+      lastName:        row.receiver.last_name ?? '',
+      avatarInitials:  row.receiver.avatar_initials ?? '',
+      avatarColor:     row.receiver.avatar_color ?? '#2E7D32',
+      nickname:        row.receiver.nickname ?? '',
+      nameDisplayMode: row.receiver.name_display_mode ?? 'nickname',
     } : undefined,
   };
 }
@@ -42,7 +43,7 @@ class ConnectionRepository implements IConnectionRepository {
   async getSentRequests(senderId: string): Promise<Connection[]> {
     const { data, error } = await supabase
       .from('connections')
-      .select('*, receiver:profiles!receiver_id(id,first_name,last_name,avatar_initials,avatar_color,nickname)')
+      .select('*, receiver:profiles!receiver_id(id,first_name,last_name,avatar_initials,avatar_color,nickname,name_display_mode)')
       .eq('sender_id', senderId)
       .order('created_at', { ascending: false });
     if (error) throw error;

@@ -16,7 +16,23 @@
     "plugins": [
       "expo-router",
       "expo-status-bar",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Auzia accède à vos photos pour choisir votre photo de profil.",
+          "cameraPermission": "Auzia utilise votre caméra pour prendre votre photo de profil.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#2E7D32",
+          "sounds": []
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -34,14 +50,28 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Auzia accède à vos photos pour choisir votre photo de profil.",
+        "NSCameraUsageDescription": "Auzia utilise votre caméra pour prendre votre photo de profil.",
+        "NSPhotoLibraryAddUsageDescription": "Auzia enregistre votre photo de profil dans vos photos."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.kinishiro.Auzia"
+      "package": "com.kinishiro.Auzia",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
     },
     "extra": {
       "router": {},

@@ -51,7 +51,8 @@
     "check_email_title": "Check your email",
     "check_email_message": "A confirmation link has been sent to your email address. Click it, then sign in.",
     "phone_label": "PHONE NUMBER",
-    "phone_placeholder": "+44 7XX XXX XXXX"
+    "phone_placeholder": "7XX XXX XXXX",
+    "phone_code_picker_title": "Phone country code"
   },
   "onboarding": {
     "welcome_arabic": "مرحبا بكم",
@@ -70,6 +71,10 @@
     "feature_announces_title": "Announcements",
     "feature_announces_desc": "Events, discounts and community offers",
     "reqinfo_title": "Required information",
+    "firstname_label": "FIRST NAME",
+    "firstname_placeholder": "Karim",
+    "lastname_label": "LAST NAME",
+    "lastname_placeholder": "Benali",
     "pseudo_label": "USERNAME / NICKNAME",
     "pseudo_placeholder": "E.g. kbenali",
     "country_label": "COUNTRY OF RESIDENCE",
@@ -204,6 +209,19 @@
     "language_setting": "Language",
     "logout": "Sign out"
   },
+  "privacy": {
+    "title": "Privacy",
+    "section_visibility": "VISIBILITY",
+    "show_on_map": "Show on map",
+    "show_on_map_sub": "Your marker is visible on the diaspora map",
+    "allow_chat": "Allow messages",
+    "allow_chat_sub": "Connected members can send you messages",
+    "section_name": "NAME SHOWN TO OTHERS",
+    "name_nickname": "Nickname",
+    "name_nickname_sub": "Only your username is displayed",
+    "name_fullname": "Full name",
+    "name_fullname_sub": "First and last name visible"
+  },
   "notifications": {
     "title": "Notifications",
     "accept": "Accept",
@@ -234,7 +252,20 @@
     "info_section": "INFORMATION",
     "field_domain": "FIELD",
     "field_origin": "ORIGIN",
-    "field_residence": "RESIDENCE"
+    "field_residence": "RESIDENCE",
+    "report": "Report",
+    "block": "Block",
+    "block_confirm_title": "Block {{name}}?",
+    "block_confirm_msg": "You will no longer see their profile and they won't be able to contact you.",
+    "block_confirm_action": "Block",
+    "blocked_toast": "User blocked",
+    "report_title": "Report this profile",
+    "report_reason_spam": "Spam or scam",
+    "report_reason_inappropriate": "Inappropriate content",
+    "report_reason_harassment": "Harassment",
+    "report_reason_fake": "Fake profile",
+    "report_reason_other": "Other",
+    "report_sent": "Report submitted. Thank you."
   },
   "connect_modal": {
     "title": "Connect with",

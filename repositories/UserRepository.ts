@@ -29,6 +29,9 @@ function toUser(row: any): User {
     longitude:                 row.longitude ?? 0,
     isLookingForOpportunities: row.is_looking_for_opportunities ?? false,
     commonConnections:         row.common_connections ?? 0,
+    showOnMap:                 row.show_on_map ?? true,
+    allowChat:                 row.allow_chat ?? true,
+    nameDisplayMode:           row.name_display_mode ?? 'nickname',
   };
 }
 
@@ -107,6 +110,9 @@ class UserRepository implements IUserRepository {
         about_me:                  updates.aboutMe,
         latitude:                  updates.latitude,
         longitude:                 updates.longitude,
+        show_on_map:               updates.showOnMap,
+        allow_chat:                updates.allowChat,
+        name_display_mode:         updates.nameDisplayMode,
         has_completed_onboarding:  true,
       })
       .eq('id', user.id)

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,22 +6,33 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Avatar } from '../../components/ui/Avatar';
 import { Button } from '../../components/ui/Button';
 import { ConnectModal } from '../../components/shared/ConnectModal';
+import { FilterSheet } from '../../components/ui/FilterSheet';
 import { userRepository } from '../../repositories/UserRepository';
 import { connectionRepository } from '../../repositories/ConnectionRepository';
+import { supabase } from '../../supabase/client';
 import { useAuthStore } from '../../store/authStore';
 import { useToastStore } from '../../store/toastStore';
 import { useConnectionStore } from '../../store/connectionStore';
+import { getDisplayName } from '../../utils/displayName';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../../theme';
 import type { ConnectionStatus, User } from '../../types';
+
+const REPORT_OPTIONS = [
+  { label: 'report_reason_spam', icon: '🚫' },
+  { label: 'report_reason_inappropriate', icon: '⚠️' },
+  { label: 'report_reason_harassment', icon: '🛑' },
+  { label: 'report_reason_fake', icon: '🎭' },
+  { label: 'report_reason_other', icon: '💬' },
+] as const;
 
 export default function UserDetailScreen() {
   const router = useRouter();
@@ -33,10 +44,9 @@ export default function UserDetailScreen() {
   const insets = useSafeAreaInsets();
   const [user, setUser] = useState<User | null>(null);
   const [connectModalVisible, setConnectModalVisible] = useState(false);
+  const [reportSheetOpen, setReportSheetOpen] = useState(false);
   const [fetchedStatus, setFetchedStatus] = useState<ConnectionStatus | null>(null);
 
-  // Live status: prefer the store's value for sent requests (updates via Realtime),
-  // fall back to the DB-fetched value for received requests
   const storeConnection = sentRequests.find((r) => r.receiverId === id);
   const connectionStatus: ConnectionStatus | null = storeConnection?.status ?? fetchedStatus;
 
@@ -54,13 +64,58 @@ export default function UserDetailScreen() {
 
   if (!user) return null;
 
+  const displayName = getDisplayName(user);
+
   const handleSendConnectRequest = async (note: string) => {
     setConnectModalVisible(false);
     if (currentUser) {
       await sendConnectionRequest(currentUser.id, user.id, note);
       setFetchedStatus('pending');
     }
-    showToast(t('user.request_sent', { name: user.firstName }));
+    showToast(t('user.request_sent', { name: displayName }));
+  };
+
+  const handleMorePress = () => {
+    Alert.alert(displayName, undefined, [
+      {
+        text: t('user.report'),
+        onPress: () => setReportSheetOpen(true),
+      },
+      {
+        text: t('user.block'),
+        style: 'destructive',
+        onPress: () => handleBlock(),
+      },
+      { text: t('common.cancel'), style: 'cancel' },
+    ]);
+  };
+
+  const handleBlock = () => {
+    Alert.alert(
+      t('user.block_confirm_title', { name: displayName }),
+      t('user.block_confirm_msg'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('user.block_confirm_action'),
+          style: 'destructive',
+          onPress: async () => {
+            if (!currentUser) return;
+            await supabase.from('user_blocks').insert({ blocker_id: currentUser.id, blocked_id: user.id });
+            showToast(t('user.blocked_toast'));
+            router.back();
+          },
+        },
+      ]
+    );
+  };
+
+  const handleReport = async (reasonKey: string) => {
+    setReportSheetOpen(false);
+    if (!currentUser) return;
+    const reason = t(`user.${reasonKey}`);
+    await supabase.from('user_reports').insert({ reporter_id: currentUser.id, reported_id: user.id, reason });
+    showToast(t('user.report_sent'));
   };
 
   const conversationId = currentUser
@@ -75,6 +130,11 @@ export default function UserDetailScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.white} />
         </TouchableOpacity>
+        {currentUser?.id !== user.id && (
+          <TouchableOpacity onPress={handleMorePress} style={styles.backBtn}>
+            <Ionicons name="ellipsis-horizontal" size={22} color={Colors.white} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView
@@ -91,7 +151,7 @@ export default function UserDetailScreen() {
         <View style={styles.identitySection}>
           <View style={styles.nameRow}>
             <Text style={styles.name}>
-              {user.firstName} {user.lastName} {user.countryOfResidenceFlag}
+              {displayName} {user.countryOfResidenceFlag}
             </Text>
           </View>
           <Text style={styles.handle}>
@@ -101,14 +161,21 @@ export default function UserDetailScreen() {
           {currentUser?.id !== user.id && (
             <View style={styles.ctaRow}>
               {connectionStatus === 'accepted' ? (
-                <Button
-                  label="Message"
-                  variant="primary"
-                  size="md"
-                  onPress={() => conversationId && router.push(`/messages/${conversationId}` as any)}
-                  fullWidth
-                  style={styles.ctaBtn}
-                />
+                user.allowChat ? (
+                  <Button
+                    label="Message"
+                    variant="primary"
+                    size="md"
+                    onPress={() => conversationId && router.push(`/messages/${conversationId}` as any)}
+                    fullWidth
+                    style={styles.ctaBtn}
+                  />
+                ) : (
+                  <View style={[styles.ctaBtn, styles.chatDisabledBtn]}>
+                    <Ionicons name="lock-closed-outline" size={14} color={Colors.textTertiary} />
+                    <Text style={styles.chatDisabledText}>Messages désactivés</Text>
+                  </View>
+                )
               ) : connectionStatus === 'pending' ? (
                 <Button
                   label={t('user_card.pending')}
@@ -163,11 +230,20 @@ export default function UserDetailScreen() {
 
       <ConnectModal
         visible={connectModalVisible}
-        userName={`${user.firstName} ${user.lastName}`}
+        userName={displayName}
         avatarInitials={user.avatarInitials}
         avatarColor={user.avatarColor}
         onClose={() => setConnectModalVisible(false)}
         onSend={handleSendConnectRequest}
+      />
+
+      <FilterSheet
+        visible={reportSheetOpen}
+        title={t('user.report_title')}
+        options={REPORT_OPTIONS.map((r) => ({ label: t(`user.${r.label}`), value: r.label, icon: r.icon }))}
+        value=""
+        onSelect={handleReport}
+        onClose={() => setReportSheetOpen(false)}
       />
     </SafeAreaView>
   );
@@ -210,6 +286,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 50,
     left: Spacing.base,
+    right: Spacing.base,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     zIndex: 10,
   },
   backBtn: {
@@ -246,6 +325,18 @@ const styles = StyleSheet.create({
   handle: { fontSize: FontSize.sm, color: Colors.textSecondary },
   ctaRow: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.xs },
   ctaBtn: { flex: 1 },
+  chatDisabledBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    height: 44,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.background,
+  },
+  chatDisabledText: { fontSize: FontSize.sm, color: Colors.textTertiary },
 
   statsRow: {
     flexDirection: 'row',

@@ -22,6 +22,7 @@ import { Avatar } from '../../components/ui/Avatar';
 import { FilterChip } from '../../components/ui/FilterChip';
 import { FilterSheet, type FilterOption } from '../../components/ui/FilterSheet';
 import { getCityCoordinates } from '../../utils/cityCoordinates';
+import { getDisplayName } from '../../utils/displayName';
 import { useAuthStore } from '../../store/authStore';
 import { useDiasporaStore } from '../../store/diasporaStore';
 import { useMessageStore } from '../../store/messageStore';
@@ -190,6 +191,7 @@ export default function DiasporaScreen() {
     const q = searchQuery.toLowerCase();
     return withoutSelf.filter(
       (u) =>
+        u.nickname.toLowerCase().includes(q) ||
         `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) ||
         u.cityOfResidence.toLowerCase().includes(q) ||
         u.workField.toLowerCase().includes(q)
@@ -228,7 +230,7 @@ export default function DiasporaScreen() {
     setConnectTarget(null);
     if (currentUser && target) {
       await sendConnectionRequest(currentUser.id, target.id, note);
-      showToast(t('user.request_sent', { name: target.firstName }));
+      showToast(t('user.request_sent', { name: target.nickname || target.firstName }));
     }
   };
 
@@ -299,10 +301,11 @@ export default function DiasporaScreen() {
       <View style={styles.mapContainer}>
         <ExpandableMap
           markers={displayedUsers
+            .filter((u) => u.showOnMap)
             .map((u) => {
               const coords = getCityCoordinates(u.cityOfResidence);
               if (!coords) return null;
-              return { id: u.id, latitude: coords.latitude, longitude: coords.longitude, label: `${u.firstName} ${u.lastName}` };
+              return { id: u.id, latitude: coords.latitude, longitude: coords.longitude, label: getDisplayName(u) };
             })
             .filter((m): m is NonNullable<typeof m> => m !== null)}
           onMarkerPress={(id) => {
@@ -347,7 +350,7 @@ export default function DiasporaScreen() {
               />
               <View style={styles.markerCardInfo}>
                 <Text style={styles.markerCardName} numberOfLines={1}>
-                  {markerUser.firstName} {markerUser.lastName}{' '}
+                  {getDisplayName(markerUser)}{' '}
                   <Text style={styles.markerCardFlag}>{markerUser.countryOfResidenceFlag}</Text>
                 </Text>
                 <Text style={styles.markerCardMeta} numberOfLines={1}>
@@ -470,7 +473,7 @@ export default function DiasporaScreen() {
 
       <ConnectModal
         visible={connectTarget !== null}
-        userName={connectTarget ? `${connectTarget.firstName} ${connectTarget.lastName}` : ''}
+        userName={connectTarget ? getDisplayName(connectTarget) : ''}
         avatarInitials={connectTarget?.avatarInitials ?? ''}
         avatarColor={connectTarget?.avatarColor ?? Colors.primary}
         onClose={() => setConnectTarget(null)}
