@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   FlatList,
   StatusBar,
   Animated,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -95,7 +96,7 @@ export default function DiasporaScreen() {
   const { filteredUsers, fetchUsers, filter, setFilter, resetFilter } = useDiasporaStore();
   const { fetchConversations, totalUnreadMessages } = useMessageStore();
   const { unreadCount: unreadNotifications } = useNotificationStore();
-  const { sentRequests, fetchSentRequests, sendRequest: sendConnectionRequest } = useConnectionStore();
+  const { sentRequests, fetchSentRequests, sendRequest: sendConnectionRequest, subscribeToUpdates, unsubscribeFromUpdates } = useConnectionStore();
   const showToast = useToastStore((s) => s.show);
   const { t } = useTranslation();
 
@@ -103,6 +104,7 @@ export default function DiasporaScreen() {
   const [openFilter, setOpenFilter] = useState<'country' | 'city' | 'domain' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [markerUser, setMarkerUser] = useState<User | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const pendingIds = useMemo(
     () => new Set(sentRequests.filter((r) => r.status === 'pending').map((r) => r.receiverId)),
@@ -116,10 +118,25 @@ export default function DiasporaScreen() {
 
   const cardAnim = useRef(new Animated.Value(0)).current;
 
+  const handleRefresh = useCallback(async () => {
+    if (!currentUser) return;
+    setRefreshing(true);
+    await Promise.all([
+      fetchUsers(),
+      fetchSentRequests(currentUser.id),
+      fetchConversations(),
+    ]);
+    setRefreshing(false);
+  }, [currentUser]);
+
   useEffect(() => {
     fetchUsers();
     fetchConversations();
-    if (currentUser) fetchSentRequests(currentUser.id);
+    if (currentUser) {
+      fetchSentRequests(currentUser.id);
+      subscribeToUpdates(currentUser.id);
+    }
+    return () => { unsubscribeFromUpdates(); };
   }, []);
 
   // ── Marker card ────────────────────────────────────────────────────────────
@@ -408,14 +425,19 @@ export default function DiasporaScreen() {
         <Text style={styles.membersTitle}>
           {t('diaspora.members_title')} <Text style={styles.membersCount}>{displayedUsers.length}</Text>
         </Text>
-        {hasActiveFilter && (
-          <TouchableOpacity
-            style={styles.resetBtn}
-            onPress={() => { resetFilter(); setSearchQuery(''); }}
-          >
-            <Text style={styles.resetText}>× {t('diaspora.reset_filter')}</Text>
+        <View style={styles.membersActions}>
+          {hasActiveFilter && (
+            <TouchableOpacity
+              style={styles.resetBtn}
+              onPress={() => { resetFilter(); setSearchQuery(''); }}
+            >
+              <Text style={styles.resetText}>× {t('diaspora.reset_filter')}</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.refreshBtn} onPress={handleRefresh} activeOpacity={0.7}>
+            <Ionicons name="refresh-outline" size={17} color={Colors.primary} />
           </TouchableOpacity>
-        )}
+        </View>
       </View>
 
       <FlatList
@@ -435,6 +457,14 @@ export default function DiasporaScreen() {
         )}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[Colors.primary]}
+            tintColor={Colors.primary}
+          />
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="people-outline" size={40} color={Colors.textTertiary} />
@@ -611,6 +641,19 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   membersCount: { color: Colors.primary },
+  membersActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  refreshBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: Colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   resetBtn: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,

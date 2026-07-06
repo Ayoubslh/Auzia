@@ -8,7 +8,7 @@ async function requestAndPick(source: Source): Promise<string | null> {
   if (source === 'camera') {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission refusée', 'Autorisez l\'accès à la caméra dans les réglages.');
+      Alert.alert('Permission refusée', "Autorisez l'accès à la caméra dans les réglages.");
       return null;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -21,7 +21,7 @@ async function requestAndPick(source: Source): Promise<string | null> {
   } else {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission refusée', 'Autorisez l\'accès aux photos dans les réglages.');
+      Alert.alert('Permission refusée', "Autorisez l'accès aux photos dans les réglages.");
       return null;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -59,20 +59,30 @@ export function showAvatarPicker(onPick: (uri: string) => void) {
   }
 }
 
-export async function uploadAvatar(userId: string, localUri: string): Promise<string> {
-  const ext = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
-  const path = `${userId}/avatar.${ext}`;
+async function uploadToStorage(bucket: string, path: string, localUri: string): Promise<string> {
+  const ext = path.split('.').pop()?.toLowerCase() ?? 'jpg';
+  const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : `image/${ext}`;
 
+  // arrayBuffer() is more reliable than blob() on React Native
   const response = await fetch(localUri);
-  const blob = await response.blob();
+  const arrayBuffer = await response.arrayBuffer();
 
   const { error } = await supabase.storage
-    .from('avatars')
-    .upload(path, blob, { contentType: `image/${ext}`, upsert: true });
+    .from(bucket)
+    .upload(path, arrayBuffer, { contentType: mimeType, upsert: true });
 
   if (error) throw error;
 
-  const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-  // Bust cache so the new image loads immediately
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return `${data.publicUrl}?t=${Date.now()}`;
+}
+
+export async function uploadAvatar(userId: string, localUri: string): Promise<string> {
+  const ext = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+  return uploadToStorage('avatars', `${userId}/avatar.${ext}`, localUri);
+}
+
+export async function uploadProductImage(userId: string, localUri: string): Promise<string> {
+  const ext = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+  return uploadToStorage('product-images', `${userId}/${Date.now()}.${ext}`, localUri);
 }

@@ -160,7 +160,7 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.primary },
+  safe: { flex: 1, backgroundColor: Colors.white },
   scroll: { flexGrow: 1 },
 
   header: {

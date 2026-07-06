@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { FilterSheet } from '../../components/ui/FilterSheet';
 import { useAuthStore } from '../../store/authStore';
 import { productRepository } from '../../repositories/ProductRepository';
+import { uploadProductImage } from '../../utils/imagePicker';
 import { getCityCoordinates } from '../../utils/cityCoordinates';
 import countriesData from '../../mock/countries.json';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../../theme';
@@ -91,7 +92,7 @@ export default function AddProductScreen() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') return;
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: 'images',
       allowsEditing: true,
       aspect: [16, 9],
       quality: 0.8,
@@ -105,12 +106,23 @@ export default function AddProductScreen() {
     try {
       const flag = countriesData.find((c) => c.country === country)?.flag ?? '';
       const coords = getCityCoordinates(city);
+
+      let imageUrl: string | undefined;
+      if (photo) {
+        try {
+          imageUrl = await uploadProductImage(currentUser.id, photo);
+        } catch {
+          // Image upload failed — create the product without a photo rather than blocking
+        }
+      }
+
       await productRepository.addProduct({
         kind: 'store',
         title: name,
         description: placeName,
         category: type === 'restaurant' ? 'Restaurant' : 'Boutique',
         tags: [],
+        imageUrl,
         city,
         country,
         countryFlag: flag,

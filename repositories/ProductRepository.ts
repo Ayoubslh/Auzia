@@ -66,38 +66,60 @@ class ProductRepository implements IProductRepository {
   }
 
   async addProduct(product: Omit<Product, 'id'>): Promise<Product> {
-    // Insert without embed — PostgREST raises a cardinality error when trying to
-    // embed multiple has-many tables (product_items, product_dishes, brand_store_links)
-    // in the same INSERT response. Fetch the full row separately instead.
     const { data, error } = await supabase
       .from('products')
       .insert({
-        kind:         product.kind,
-        title:        product.title,
-        description:  product.description,
-        category:     product.category,
-        emoji:        product.emoji,
-        tags:         product.tags ?? [],
-        image_url:    product.imageUrl,
-        address:      product.address,
-        city:         product.city,
-        country:      product.country,
-        country_flag: product.countryFlag,
-        cities:       product.cities ?? [],
-        latitude:     product.latitude,
-        longitude:    product.longitude,
+        kind:          product.kind,
+        title:         product.title,
+        description:   product.description,
+        category:      product.category,
+        emoji:         product.emoji,
+        tags:          product.tags ?? [],
+        image_url:     product.imageUrl,
+        address:       product.address,
+        city:          product.city,
+        country:       product.country,
+        country_flag:  product.countryFlag,
+        cities:        product.cities ?? [],
+        latitude:      product.latitude,
+        longitude:     product.longitude,
         contact_phone: product.contactPhone,
         contact_email: product.contactEmail,
-        website:      product.website,
-        added_by:     product.addedBy,
+        website:       product.website,
+        added_by:      product.addedBy,
       })
       .select('id')
       .single();
 
     if (error) throw error;
-    const created = await this.getProductById(data.id);
-    if (!created) throw new Error('Failed to fetch created product');
-    return created;
+    // Construct the return value from known data to avoid a second multi-join SELECT
+    // (caller doesn't use the returned product anyway)
+    return {
+      id:          data.id,
+      kind:        product.kind,
+      title:       product.title,
+      description: product.description,
+      category:    product.category,
+      emoji:       product.emoji,
+      tags:        product.tags ?? [],
+      imageUrl:    product.imageUrl,
+      address:     product.address,
+      city:        product.city,
+      country:     product.country,
+      countryFlag: product.countryFlag,
+      cities:      product.cities ?? [],
+      latitude:    product.latitude,
+      longitude:   product.longitude,
+      contactPhone: product.contactPhone,
+      contactEmail: product.contactEmail,
+      website:     product.website,
+      rating:      undefined,
+      reviewCount: 0,
+      addedBy:     product.addedBy,
+      items:       [],
+      dishes:      [],
+      availableAt: [],
+    };
   }
 }
 
