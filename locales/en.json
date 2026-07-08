@@ -14,7 +14,8 @@
     "see_all": "See all",
     "see_profile": "View profile",
     "connect": "Connect",
-    "no_results": "No results"
+    "no_results": "No results",
+    "error_generic": "An error occurred"
   },
   "auth": {
     "tagline": "The Algerian platform worldwide",
@@ -220,7 +221,8 @@
     "name_nickname": "Nickname",
     "name_nickname_sub": "Only your username is displayed",
     "name_fullname": "Full name",
-    "name_fullname_sub": "First and last name visible"
+    "name_fullname_sub": "First and last name visible",
+    "saved": "Preferences saved"
   },
   "notifications": {
     "title": "Notifications",

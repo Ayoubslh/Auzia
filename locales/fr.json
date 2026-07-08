@@ -14,7 +14,8 @@
     "see_all": "Voir tout",
     "see_profile": "Voir le profil",
     "connect": "Se connecter",
-    "no_results": "Aucun résultat"
+    "no_results": "Aucun résultat",
+    "error_generic": "Une erreur s'est produite"
   },
   "auth": {
     "tagline": "المنصة الجزائرية في العالم",
@@ -220,7 +221,8 @@
     "name_nickname": "Pseudonyme",
     "name_nickname_sub": "Seul votre surnom est affiché",
     "name_fullname": "Nom complet",
-    "name_fullname_sub": "Prénom et nom de famille visibles"
+    "name_fullname_sub": "Prénom et nom de famille visibles",
+    "saved": "Préférences enregistrées"
   },
   "notifications": {
     "title": "Notifications",

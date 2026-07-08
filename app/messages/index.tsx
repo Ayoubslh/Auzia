@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,7 @@ export default function MessagesScreen() {
   const { currentUser } = useAuthStore();
   const { conversations, fetchConversations } = useMessageStore();
   const { sentRequests, fetchSentRequests } = useConnectionStore();
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchConversations();
@@ -40,10 +41,22 @@ export default function MessagesScreen() {
     .filter((c) => c.receiverUser != null)
     .map((c) => ({ connection: c, user: c.receiverUser! }));
 
-  const listData: ListItem[] = [
-    ...invites.map((i) => ({ kind: 'invite' as const, connection: i.connection, user: i.user })),
-    ...conversations.map((c) => ({ kind: 'conversation' as const, conversation: c })),
-  ];
+  const listData: ListItem[] = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    const filteredConversations = q
+      ? conversations.filter((c) =>
+          getDisplayName(c.participant).toLowerCase().includes(q) ||
+          c.lastMessage?.content?.toLowerCase().includes(q),
+        )
+      : conversations;
+    const filteredInvites = q
+      ? invites.filter((i) => getDisplayName(i.user).toLowerCase().includes(q))
+      : invites;
+    return [
+      ...filteredInvites.map((i) => ({ kind: 'invite' as const, connection: i.connection, user: i.user })),
+      ...filteredConversations.map((c) => ({ kind: 'conversation' as const, conversation: c })),
+    ];
+  }, [invites, conversations, searchQuery]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -65,6 +78,8 @@ export default function MessagesScreen() {
             style={styles.searchInput}
             placeholder="Rechercher..."
             placeholderTextColor={Colors.textTertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
         </View>
       </View>

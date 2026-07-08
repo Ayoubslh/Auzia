@@ -14,7 +14,8 @@
     "see_all": "عرض الكل",
     "see_profile": "عرض الملف",
     "connect": "تواصل",
-    "no_results": "لا توجد نتائج"
+    "no_results": "لا توجد نتائج",
+    "error_generic": "حدث خطأ"
   },
   "auth": {
     "tagline": "المنصة الجزائرية في العالم",
@@ -220,7 +221,8 @@
     "name_nickname": "الاسم المستعار",
     "name_nickname_sub": "يُعرض اسمك المستعار فقط",
     "name_fullname": "الاسم الكامل",
-    "name_fullname_sub": "الاسم الأول واللقب مرئيان"
+    "name_fullname_sub": "الاسم الأول واللقب مرئيان",
+    "saved": "تم حفظ التفضيلات"
   },
   "notifications": {
     "title": "الإشعارات",

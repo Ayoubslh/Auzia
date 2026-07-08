@@ -51,6 +51,7 @@ export default function WelcomeScreen() {
           <View style={[styles.dot, styles.dotActive]} />
           <View style={styles.dot} />
           <View style={styles.dot} />
+          <View style={styles.dot} />
         </View>
 
         <TouchableOpacity

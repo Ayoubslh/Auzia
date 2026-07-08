@@ -34,7 +34,12 @@ export default function PrivacyScreen() {
   if (!currentUser) return null;
 
   const save = async (patch: Parameters<typeof updateProfile>[0]) => {
-    try { await updateProfile(patch); } catch { /* silent */ }
+    try {
+      await updateProfile(patch);
+      showToast(t('privacy.saved'));
+    } catch {
+      showToast(t('common.error_generic'));
+    }
   };
 
   const handleShowOnMap = (val: boolean) => {

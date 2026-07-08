@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   FlatList,
   StatusBar,
   Modal,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +19,7 @@ import { AppHeader } from '../../components/shared/AppHeader';
 import { ExpandableMap } from '../../components/shared/ExpandableMap';
 import { FilterChip } from '../../components/ui/FilterChip';
 import { FilterSheet } from '../../components/ui/FilterSheet';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { productRepository } from '../../repositories/ProductRepository';
 import { useMessageStore } from '../../store/messageStore';
@@ -70,15 +72,43 @@ export default function ProduitsScreen() {
   const { t } = useTranslation();
 
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [filter, setFilter] = useState<ProductFilter>({});
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('product');
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('store');
   const [searchQuery, setSearchQuery] = useState('');
   const [openFilter, setOpenFilter] = useState<'country' | 'city' | null>(null);
   const [infoModal, setInfoModal] = useState<Product | null>(null);
 
-  useEffect(() => {
-    productRepository.getProducts().then(setProducts);
+  const loadProducts = useCallback(async () => {
+    try {
+      setFetchError(null);
+      const data = await productRepository.getProducts();
+      setProducts(data);
+    } catch (e: any) {
+      setFetchError(e?.message ?? 'Erreur de chargement');
+    }
   }, []);
+
+  const hasMounted = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasMounted.current) {
+        hasMounted.current = true;
+        loadProducts().finally(() => setLoading(false));
+      } else {
+        loadProducts();
+      }
+    }, [loadProducts]),
+  );
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadProducts();
+    setRefreshing(false);
+  }, [loadProducts]);
 
   // ── Filter options ─────────────────────────────────────────────────────────
 
@@ -256,7 +286,22 @@ export default function ProduitsScreen() {
       </ScrollView>
 
       {/* List */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      ) : fetchError ? (
+        <View style={styles.emptyState}>
+          <View style={styles.emptyIcon}>
+            <Ionicons name="cloud-offline-outline" size={32} color={Colors.textTertiary} />
+          </View>
+          <Text style={styles.emptyTitle}>Erreur de chargement</Text>
+          <Text style={styles.emptyDesc}>{fetchError}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={handleRefresh}>
+            <Text style={styles.retryText}>Réessayer</Text>
+          </TouchableOpacity>
+        </View>
+      ) : filtered.length === 0 ? (
         <View style={styles.emptyState}>
           <View style={styles.emptyIcon}>
             <Ionicons name="bag-outline" size={32} color={Colors.textTertiary} />
@@ -275,6 +320,14 @@ export default function ProduitsScreen() {
           }
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
+            />
+          }
         />
       )}
 
@@ -559,6 +612,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: FontSize.md, fontWeight: FontWeight.semibold, color: Colors.textPrimary },
   emptyDesc: { fontSize: FontSize.sm, color: Colors.textTertiary },
+  retryBtn: {
+    marginTop: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.full,
+  },
+  retryText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold, color: Colors.white },
   listContent: { paddingBottom: Spacing.xxl },
 });
 

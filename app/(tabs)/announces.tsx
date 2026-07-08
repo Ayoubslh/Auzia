@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { AppHeader } from '../../components/shared/AppHeader';
 import { useAuthStore } from '../../store/authStore';
 import { useMessageStore } from '../../store/messageStore';
+import { useNotificationStore } from '../../store/notificationStore';
 import { announcementRepository } from '../../repositories/AnnouncementRepository';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../../theme';
 import type { Announcement, AnnouncementType } from '../../types';
@@ -34,12 +35,11 @@ const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
 
 export default function AnnoncesScreen() {
   const { currentUser } = useAuthStore();
-  const { conversations } = useMessageStore();
+  const { totalUnreadMessages } = useMessageStore();
+  const { unreadCount: unreadNotifications } = useNotificationStore();
   const { t } = useTranslation();
   const [activeFilter, setActiveFilter] = useState<AnnouncementType | 'Tous'>('Tous');
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-
-  const totalUnread = conversations.reduce((s, c) => s + c.unreadCount, 0);
 
   useEffect(() => {
     const type = activeFilter === 'Tous' ? undefined : activeFilter;
@@ -51,7 +51,7 @@ export default function AnnoncesScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
-      <AppHeader user={currentUser} notificationCount={3} messageCount={totalUnread} />
+      <AppHeader user={currentUser} notificationCount={unreadNotifications} messageCount={totalUnreadMessages} />
 
       <View style={styles.filterContainer}>
         <ScrollView

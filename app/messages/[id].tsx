@@ -117,7 +117,6 @@ export default function ChatScreen() {
             placeholder="Votre message..."
             placeholderTextColor={Colors.textTertiary}
             multiline
-            onSubmitEditing={handleSend}
           />
           <TouchableOpacity
             style={[styles.sendBtn, !text.trim() && styles.sendBtnDisabled]}

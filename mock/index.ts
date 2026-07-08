@@ -39,6 +39,9 @@ export const MOCK_CURRENT_USER: User = {
   memberSince: 'Mar 2024',
   latitude: 48.8566,
   longitude: 2.3522,
+  showOnMap: true,
+  allowChat: true,
+  nameDisplayMode: 'nickname',
 };
 
 // ─── Users ───────────────────────────────────────────────────────────────────

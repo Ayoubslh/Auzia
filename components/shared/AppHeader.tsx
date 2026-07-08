@@ -33,6 +33,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           initials={user.avatarInitials}
           color={user.avatarColor}
           size={42}
+          imageUrl={user.avatar}
         />
         <View style={styles.userInfo}>
           <Text style={styles.userName}>
