@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
@@ -34,6 +34,7 @@ export default function RegisterScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { register } = useAuthStore();
+  const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -107,151 +108,136 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
+    <View style={[styles.outer, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.kav}
       >
-        <View style={styles.container}>
-
-          {/* Compact header: back + inline branding */}
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-              <Ionicons name="arrow-back" size={20} color={Colors.textPrimary} />
-            </TouchableOpacity>
-            <View style={styles.brand}>
-              <View style={styles.logoCircle}>
-                <Ionicons name="earth" size={20} color={Colors.white} />
-              </View>
-              <Text style={styles.appName}>Auzia</Text>
+        {/* ── Hero ── */}
+        <View style={styles.hero}>
+          <View style={styles.bubble1} />
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={20} color={Colors.white} />
+          </TouchableOpacity>
+          <View style={styles.heroBrand}>
+            <View style={styles.logoCircle}>
+              <Ionicons name="earth" size={20} color={Colors.white} />
             </View>
-            {/* Spacer to center the brand */}
-            <View style={styles.headerSpacer} />
+            <Text style={styles.appName}>Auzia</Text>
           </View>
+        </View>
 
-          {/* Form */}
-          <View style={styles.form}>
-            <View style={styles.formTop}>
+        {/* ── Card ── */}
+        <View style={[styles.card, { paddingBottom: Math.max(insets.bottom, Spacing.xl) }]}>
+          <View style={styles.formTop}>
+            <View style={styles.formHeading}>
               <Text style={styles.title}>{t('auth.register_title')}</Text>
               <Text style={styles.subtitle}>{t('auth.register_subtitle')}</Text>
-
-              {/* Google register */}
-              <TouchableOpacity style={styles.googleBtn} onPress={handleGoogle} activeOpacity={0.8}>
-                <Text style={styles.googleG}>G</Text>
-                <Text style={styles.googleLabel}>{t('auth.google_register')}</Text>
-              </TouchableOpacity>
-
-              {/* Divider */}
-              <View style={styles.divider}>
-                <View style={styles.divLine} />
-                <Text style={styles.divText}>{t('auth.or_email')}</Text>
-                <View style={styles.divLine} />
-              </View>
-
-              {/* Email */}
-              <View style={[styles.inputField, errors.email ? styles.inputError : undefined]}>
-                <Ionicons name="mail-outline" size={17} color={Colors.textTertiary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.inputText}
-                  value={email}
-                  onChangeText={(v) => { setEmail(v); setErrors((e) => ({ ...e, email: undefined })); }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholder={t('auth.email_placeholder')}
-                  placeholderTextColor={Colors.textTertiary}
-                />
-              </View>
-
-              {/* Password */}
-              <View style={[styles.inputField, errors.password ? styles.inputError : undefined]}>
-                <Ionicons name="lock-closed-outline" size={17} color={Colors.textTertiary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.inputText}
-                  value={password}
-                  onChangeText={(v) => { setPassword(v); setErrors((e) => ({ ...e, password: undefined })); }}
-                  secureTextEntry={!showPassword}
-                  placeholder={t('auth.error_min_chars')}
-                  placeholderTextColor={Colors.textTertiary}
-                />
-                <TouchableOpacity onPress={() => setShowPassword((v) => !v)} style={styles.eyeBtn}>
-                  <Ionicons
-                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                    size={17}
-                    color={Colors.textTertiary}
-                  />
-                </TouchableOpacity>
-              </View>
-
-              {/* Confirm password */}
-              <View style={[styles.inputField, errors.confirm ? styles.inputError : undefined]}>
-                <Ionicons name="shield-checkmark-outline" size={17} color={Colors.textTertiary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.inputText}
-                  value={confirmPassword}
-                  onChangeText={(v) => { setConfirmPassword(v); setErrors((e) => ({ ...e, confirm: undefined })); }}
-                  secureTextEntry={!showConfirm}
-                  placeholder={t('auth.confirm_password_placeholder')}
-                  placeholderTextColor={Colors.textTertiary}
-                />
-                <TouchableOpacity onPress={() => setShowConfirm((v) => !v)} style={styles.eyeBtn}>
-                  <Ionicons
-                    name={showConfirm ? 'eye-outline' : 'eye-off-outline'}
-                    size={17}
-                    color={Colors.textTertiary}
-                  />
-                </TouchableOpacity>
-              </View>
-
-              {/* Phone with country code */}
-              <View style={styles.inputField}>
-                <TouchableOpacity
-                  style={styles.codeBtn}
-                  onPress={() => setCodePickerOpen(true)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.codeFlag}>{selectedCode.flag}</Text>
-                  <Text style={styles.codeText}>{selectedCode.code}</Text>
-                  <Ionicons name="chevron-down" size={12} color={Colors.textTertiary} />
-                </TouchableOpacity>
-                <View style={styles.phoneSep} />
-                <TextInput
-                  style={[styles.inputText, { paddingLeft: Spacing.sm }]}
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                  placeholder={t('auth.phone_placeholder')}
-                  placeholderTextColor={Colors.textTertiary}
-                />
-              </View>
-
-              {/* Terms */}
-              <Text style={styles.terms}>
-                {t('auth.terms_prefix')}
-                <Text style={styles.termsLink}>{t('auth.terms_link')}</Text>
-                {t('auth.terms_and')}
-                <Text style={styles.termsLink}>{t('auth.privacy_link')}</Text>.
-              </Text>
             </View>
 
-            {/* Bottom actions */}
-            <View style={styles.formBottom}>
-              <Button
-                label={t('auth.create_my_account')}
-                onPress={handleRegister}
-                loading={loading}
-                fullWidth
-                size="lg"
+            <TouchableOpacity style={styles.googleBtn} onPress={handleGoogle} activeOpacity={0.8}>
+              <Text style={styles.googleG}>G</Text>
+              <Text style={styles.googleLabel}>{t('auth.google_register')}</Text>
+            </TouchableOpacity>
+
+            <View style={styles.divider}>
+              <View style={styles.divLine} />
+              <Text style={styles.divText}>{t('auth.or_email')}</Text>
+              <View style={styles.divLine} />
+            </View>
+
+            {/* Email */}
+            <View style={[styles.inputField, errors.email ? styles.inputError : null]}>
+              <Ionicons name="mail-outline" size={17} color={errors.email ? Colors.error : Colors.textTertiary} />
+              <TextInput
+                style={styles.inputText}
+                value={email}
+                onChangeText={(v) => { setEmail(v); setErrors((e) => ({ ...e, email: undefined })); }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder={t('auth.email_placeholder')}
+                placeholderTextColor={Colors.textTertiary}
               />
-              <View style={styles.switchRow}>
-                <Text style={styles.switchLabel}>{t('auth.already_account')}</Text>
-                <TouchableOpacity onPress={() => router.back()}>
-                  <Text style={styles.switchLink}>{t('auth.sign_in_link')}</Text>
-                </TouchableOpacity>
-              </View>
             </View>
+
+            {/* Password */}
+            <View style={[styles.inputField, errors.password ? styles.inputError : null]}>
+              <Ionicons name="lock-closed-outline" size={17} color={errors.password ? Colors.error : Colors.textTertiary} />
+              <TextInput
+                style={styles.inputText}
+                value={password}
+                onChangeText={(v) => { setPassword(v); setErrors((e) => ({ ...e, password: undefined })); }}
+                secureTextEntry={!showPassword}
+                placeholder={t('auth.error_min_chars')}
+                placeholderTextColor={Colors.textTertiary}
+              />
+              <TouchableOpacity onPress={() => setShowPassword((v) => !v)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={17} color={Colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Confirm */}
+            <View style={[styles.inputField, errors.confirm ? styles.inputError : null]}>
+              <Ionicons name="shield-checkmark-outline" size={17} color={errors.confirm ? Colors.error : Colors.textTertiary} />
+              <TextInput
+                style={styles.inputText}
+                value={confirmPassword}
+                onChangeText={(v) => { setConfirmPassword(v); setErrors((e) => ({ ...e, confirm: undefined })); }}
+                secureTextEntry={!showConfirm}
+                placeholder={t('auth.confirm_password_placeholder')}
+                placeholderTextColor={Colors.textTertiary}
+              />
+              <TouchableOpacity onPress={() => setShowConfirm((v) => !v)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name={showConfirm ? 'eye-outline' : 'eye-off-outline'} size={17} color={Colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Phone */}
+            <View style={styles.inputField}>
+              <TouchableOpacity
+                style={styles.codeBtn}
+                onPress={() => setCodePickerOpen(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.codeFlag}>{selectedCode.flag}</Text>
+                <Text style={styles.codeText}>{selectedCode.code}</Text>
+                <Ionicons name="chevron-down" size={12} color={Colors.textTertiary} />
+              </TouchableOpacity>
+              <View style={styles.phoneSep} />
+              <TextInput
+                style={[styles.inputText, { paddingLeft: Spacing.sm }]}
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                placeholder={t('auth.phone_placeholder')}
+                placeholderTextColor={Colors.textTertiary}
+              />
+            </View>
+
+            <Text style={styles.terms}>
+              {t('auth.terms_prefix')}
+              <Text style={styles.termsLink}>{t('auth.terms_link')}</Text>
+              {t('auth.terms_and')}
+              <Text style={styles.termsLink}>{t('auth.privacy_link')}</Text>.
+            </Text>
           </View>
 
+          <View style={styles.formBottom}>
+            <Button
+              label={t('auth.create_my_account')}
+              onPress={handleRegister}
+              loading={loading}
+              fullWidth
+              size="lg"
+            />
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>{t('auth.already_account')}</Text>
+              <TouchableOpacity onPress={() => router.back()}>
+                <Text style={styles.switchLink}>{t('auth.sign_in_link')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </KeyboardAvoidingView>
 
@@ -267,63 +253,94 @@ export default function RegisterScreen() {
         }}
         onClose={() => setCodePickerOpen(false)}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.white },
+  outer: { flex: 1, backgroundColor: Colors.primary },
   kav: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: Spacing.xl },
 
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: Spacing.base,
-    paddingBottom: Spacing.md,
+  hero: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: 14,
+    paddingBottom: 24,
+    gap: 10,
+    overflow: 'hidden',
+  },
+  bubble1: {
+    position: 'absolute',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    top: -60,
+    right: -30,
   },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.background,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  brand: {
-    flex: 1,
+  heroBrand: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: Spacing.sm,
   },
   logoCircle: {
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: Colors.primary,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.28)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   appName: {
-    fontSize: FontSize.lg,
+    fontSize: 20,
     fontWeight: FontWeight.bold,
-    color: Colors.primary,
+    color: Colors.white,
+    letterSpacing: 0.5,
   },
-  headerSpacer: { width: 40 },
 
-  form: { flex: 1, justifyContent: 'space-between', paddingBottom: Spacing.base },
+  card: {
+    flex: 1,
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.xl,
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+
   formTop: { gap: Spacing.sm },
+  formHeading: { gap: 3, marginBottom: 4 },
 
-  title: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.textPrimary },
-  subtitle: { fontSize: FontSize.sm, color: Colors.textSecondary },
+  title: {
+    fontSize: FontSize.xl,
+    fontWeight: FontWeight.bold,
+    color: Colors.textPrimary,
+  },
+  subtitle: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+  },
 
   googleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    height: 44,
+    height: 46,
     borderRadius: BorderRadius.full,
     borderWidth: 1.5,
     borderColor: Colors.border,
@@ -335,39 +352,30 @@ const styles = StyleSheet.create({
 
   divider: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   divLine: { flex: 1, height: 1, backgroundColor: Colors.border },
-  divText: { fontSize: FontSize.xs, color: Colors.textTertiary },
+  divText: { fontSize: FontSize.xs, color: Colors.textTertiary, letterSpacing: 0.3 },
 
   inputField: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 46,
-    borderWidth: 1,
+    gap: Spacing.sm,
+    height: 48,
+    borderWidth: 1.5,
     borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     backgroundColor: Colors.background,
     paddingHorizontal: Spacing.base,
   },
-  inputError: { borderColor: Colors.error },
-  inputIcon: { marginRight: Spacing.sm },
+  inputError: { borderColor: Colors.error, backgroundColor: '#FEF2F2' },
   inputText: {
     flex: 1,
     fontSize: FontSize.base,
     color: Colors.textPrimary,
   },
-  eyeBtn: { padding: Spacing.xs },
 
-  codeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
+  codeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   codeFlag: { fontSize: 16 },
-  codeText: {
-    fontSize: FontSize.sm,
-    fontWeight: FontWeight.medium,
-    color: Colors.textPrimary,
-  },
-  phoneSep: { width: 1, height: 24, backgroundColor: Colors.border, marginHorizontal: Spacing.sm },
+  codeText: { fontSize: FontSize.sm, fontWeight: FontWeight.medium, color: Colors.textPrimary },
+  phoneSep: { width: 1, height: 22, backgroundColor: Colors.border },
 
   terms: {
     fontSize: FontSize.xs,

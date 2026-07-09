@@ -96,7 +96,7 @@ export default function DiasporaScreen() {
   const { filteredUsers, fetchUsers, filter, setFilter, resetFilter } = useDiasporaStore();
   const { fetchConversations, totalUnreadMessages } = useMessageStore();
   const { unreadCount: unreadNotifications } = useNotificationStore();
-  const { sentRequests, receivedRequests, fetchSentRequests, fetchReceivedRequests, sendRequest: sendConnectionRequest, subscribeToUpdates, unsubscribeFromUpdates } = useConnectionStore();
+  const { sentRequests, receivedRequests, fetchSentRequests, fetchReceivedRequests, sendRequest: sendConnectionRequest } = useConnectionStore();
   const showToast = useToastStore((s) => s.show);
   const { t } = useTranslation();
 
@@ -141,9 +141,7 @@ export default function DiasporaScreen() {
     if (currentUser) {
       fetchSentRequests(currentUser.id);
       fetchReceivedRequests(currentUser.id);
-      subscribeToUpdates(currentUser.id);
     }
-    return () => { unsubscribeFromUpdates(); };
   }, []);
 
   // ── Marker card ────────────────────────────────────────────────────────────
@@ -449,6 +447,7 @@ export default function DiasporaScreen() {
       </View>
 
       <FlatList
+        style={styles.list}
         data={displayedUsers}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -688,5 +687,6 @@ const styles = StyleSheet.create({
   },
   emptyDesc: { fontSize: FontSize.sm, color: Colors.textTertiary },
 
+  list: { flex: 1 },
   listContent: { paddingBottom: 90 },
 });

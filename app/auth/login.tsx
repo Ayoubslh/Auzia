@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
@@ -26,6 +26,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { login } = useAuthStore();
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -78,142 +79,181 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
+    <View style={[styles.outer, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.kav}
       >
-        <View style={styles.container}>
-
-          {/* Branding */}
-          <View style={styles.brand}>
-            <View style={styles.logoCircle}>
-              <Ionicons name="earth" size={38} color={Colors.white} />
-            </View>
-            <Text style={styles.appName}>Auzia</Text>
-            <Text style={styles.appTagline}>{t('auth.tagline')}</Text>
+        {/* ── Hero ── */}
+        <View style={styles.hero}>
+          <View style={styles.bubble1} />
+          <View style={styles.bubble2} />
+          <View style={styles.logoCircle}>
+            <Ionicons name="earth" size={32} color={Colors.white} />
           </View>
+          <Text style={styles.appName}>Auzia</Text>
+          <Text style={styles.tagline}>{t('auth.tagline')}</Text>
+        </View>
 
-          {/* Form */}
-          <View style={styles.form}>
-            <View style={styles.formTop}>
+        {/* ── Card ── */}
+        <View style={[styles.card, { paddingBottom: Math.max(insets.bottom, Spacing.xl) }]}>
+          <View style={styles.formTop}>
+            <View style={styles.formHeading}>
               <Text style={styles.title}>{t('auth.login_title')}</Text>
               <Text style={styles.subtitle}>{t('auth.login_subtitle')}</Text>
-
-              {/* Google sign-in */}
-              <TouchableOpacity style={styles.googleBtn} onPress={handleGoogle} activeOpacity={0.8}>
-                <Text style={styles.googleG}>G</Text>
-                <Text style={styles.googleLabel}>{t('auth.google_signin')}</Text>
-              </TouchableOpacity>
-
-              {/* Divider */}
-              <View style={styles.divider}>
-                <View style={styles.divLine} />
-                <Text style={styles.divText}>{t('auth.or_email')}</Text>
-                <View style={styles.divLine} />
-              </View>
-
-              {/* Email */}
-              <View style={styles.inputField}>
-                <Ionicons name="mail-outline" size={18} color={Colors.textTertiary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.inputText}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholder={t('auth.email_placeholder')}
-                  placeholderTextColor={Colors.textTertiary}
-                />
-              </View>
-
-              {/* Password */}
-              <View style={styles.inputField}>
-                <Ionicons name="lock-closed-outline" size={18} color={Colors.textTertiary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.inputText}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  placeholder={t('auth.password_placeholder')}
-                  placeholderTextColor={Colors.textTertiary}
-                />
-                <TouchableOpacity onPress={() => setShowPassword((v) => !v)} style={styles.eyeBtn}>
-                  <Ionicons
-                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                    size={18}
-                    color={Colors.textTertiary}
-                  />
-                </TouchableOpacity>
-              </View>
-
-              {/* Forgot password */}
-              <TouchableOpacity style={styles.forgotRow}>
-                <Text style={styles.forgotText}>{t('auth.forgot_password')}</Text>
-              </TouchableOpacity>
             </View>
 
-            {/* Bottom actions */}
-            <View style={styles.formBottom}>
-              <Button
-                label={t('auth.sign_in')}
-                onPress={handleLogin}
-                loading={loading}
-                fullWidth
-                size="lg"
+            <TouchableOpacity style={styles.googleBtn} onPress={handleGoogle} activeOpacity={0.8}>
+              <Text style={styles.googleG}>G</Text>
+              <Text style={styles.googleLabel}>{t('auth.google_signin')}</Text>
+            </TouchableOpacity>
+
+            <View style={styles.divider}>
+              <View style={styles.divLine} />
+              <Text style={styles.divText}>{t('auth.or_email')}</Text>
+              <View style={styles.divLine} />
+            </View>
+
+            <View style={styles.inputField}>
+              <Ionicons name="mail-outline" size={18} color={Colors.textTertiary} />
+              <TextInput
+                style={styles.inputText}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder={t('auth.email_placeholder')}
+                placeholderTextColor={Colors.textTertiary}
               />
-              <View style={styles.switchRow}>
-                <Text style={styles.switchLabel}>{t('auth.no_account')}</Text>
-                <TouchableOpacity onPress={() => router.push('/auth/register' as any)}>
-                  <Text style={styles.switchLink}>{t('auth.create_account')}</Text>
-                </TouchableOpacity>
-              </View>
             </View>
+
+            <View style={styles.inputField}>
+              <Ionicons name="lock-closed-outline" size={18} color={Colors.textTertiary} />
+              <TextInput
+                style={styles.inputText}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                placeholder={t('auth.password_placeholder')}
+                placeholderTextColor={Colors.textTertiary}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword((v) => !v)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                  size={18}
+                  color={Colors.textTertiary}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.forgotRow} activeOpacity={0.7}>
+              <Text style={styles.forgotText}>{t('auth.forgot_password')}</Text>
+            </TouchableOpacity>
           </View>
 
+          <View style={styles.formBottom}>
+            <Button
+              label={t('auth.sign_in')}
+              onPress={handleLogin}
+              loading={loading}
+              fullWidth
+              size="lg"
+            />
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>{t('auth.no_account')}</Text>
+              <TouchableOpacity onPress={() => router.push('/auth/register' as any)}>
+                <Text style={styles.switchLink}>{t('auth.create_account')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.white },
+  outer: { flex: 1, backgroundColor: Colors.primary },
   kav: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: Spacing.xl },
 
-  brand: {
+  hero: {
     alignItems: 'center',
-    paddingTop: Spacing.xxl,
-    paddingBottom: Spacing.xl,
-    gap: Spacing.xs,
+    paddingTop: 28,
+    paddingBottom: 32,
+    gap: 6,
+    overflow: 'hidden',
+  },
+  bubble1: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    top: -70,
+    right: -50,
+  },
+  bubble2: {
+    position: 'absolute',
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    bottom: -10,
+    left: 20,
   },
   logoCircle: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: Colors.primary,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.28)',
     alignItems: 'center',
     justifyContent: 'center',
-    ...Shadow.md,
   },
   appName: {
-    fontSize: FontSize.xxl,
+    fontSize: 26,
     fontWeight: FontWeight.bold,
-    color: Colors.primary,
-    marginTop: Spacing.sm,
+    color: Colors.white,
+    letterSpacing: 0.5,
+    marginTop: 2,
   },
-  appTagline: { fontSize: FontSize.sm, color: Colors.textTertiary },
+  tagline: {
+    fontSize: FontSize.sm,
+    color: 'rgba(255,255,255,0.65)',
+    letterSpacing: 0.2,
+  },
 
-  form: { flex: 1, justifyContent: 'space-between', paddingBottom: Spacing.base },
+  card: {
+    flex: 1,
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.xl,
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+
   formTop: { gap: Spacing.md },
+  formHeading: { gap: 4 },
 
-  title: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.textPrimary },
+  title: {
+    fontSize: FontSize.xl,
+    fontWeight: FontWeight.bold,
+    color: Colors.textPrimary,
+  },
   subtitle: {
     fontSize: FontSize.sm,
     color: Colors.textSecondary,
-    marginTop: -Spacing.sm,
   },
 
   googleBtn: {
@@ -221,7 +261,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    height: 46,
+    height: 48,
     borderRadius: BorderRadius.full,
     borderWidth: 1.5,
     borderColor: Colors.border,
@@ -233,27 +273,26 @@ const styles = StyleSheet.create({
 
   divider: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   divLine: { flex: 1, height: 1, backgroundColor: Colors.border },
-  divText: { fontSize: FontSize.xs, color: Colors.textTertiary },
+  divText: { fontSize: FontSize.xs, color: Colors.textTertiary, letterSpacing: 0.3 },
 
   inputField: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 46,
-    borderWidth: 1,
+    gap: Spacing.sm,
+    height: 50,
+    borderWidth: 1.5,
     borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     backgroundColor: Colors.background,
     paddingHorizontal: Spacing.base,
   },
-  inputIcon: { marginRight: Spacing.sm },
   inputText: {
     flex: 1,
     fontSize: FontSize.base,
     color: Colors.textPrimary,
   },
-  eyeBtn: { padding: Spacing.xs },
 
-  forgotRow: { alignSelf: 'flex-end', marginTop: -Spacing.xs },
+  forgotRow: { alignSelf: 'flex-end', marginTop: -4 },
   forgotText: { fontSize: FontSize.sm, color: Colors.primary, fontWeight: FontWeight.medium },
 
   formBottom: { gap: Spacing.md },
