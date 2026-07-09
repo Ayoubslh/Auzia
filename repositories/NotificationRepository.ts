@@ -13,6 +13,7 @@ function toNotification(row: any): Notification {
     connectionId: row.connection_id ?? undefined,
     actorInitials: row.actor?.avatar_initials ?? undefined,
     actorColor: row.actor?.avatar_color ?? undefined,
+    actorImageUrl: row.actor?.avatar_url ?? undefined,
   };
 }
 
@@ -20,7 +21,7 @@ class NotificationRepository {
   async getAll(userId: string): Promise<Notification[]> {
     const { data, error } = await supabase
       .from('notifications')
-      .select('*, actor:profiles!action_user_id(id,avatar_initials,avatar_color)')
+      .select('*, actor:profiles!action_user_id(id,avatar_initials,avatar_color,avatar_url)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(50);

@@ -133,27 +133,42 @@ export default function MessagesScreen() {
   );
 }
 
-const InviteRow: React.FC<{ connection: Connection; user: ConnectionUser }> = ({ connection, user }) => (
-  <View style={convStyles.row}>
-    <View style={{ position: 'relative' }}>
-      <Avatar initials={user.avatarInitials} color={user.avatarColor} size={50} />
-    </View>
-
-    <View style={convStyles.info}>
-      <View style={convStyles.topRow}>
-        <Text style={convStyles.name}>
-          {getDisplayName(user)}
-        </Text>
-        <View style={convStyles.pendingTag}>
-          <Text style={convStyles.pendingTagText}>En attente</Text>
-        </View>
+const InviteRow: React.FC<{ connection: Connection; user: ConnectionUser }> = ({ connection, user }) => {
+  const router = useRouter();
+  return (
+    <TouchableOpacity
+      style={convStyles.row}
+      activeOpacity={0.8}
+      onPress={() => router.push(`/user/${user.id}` as any)}
+    >
+      <View style={{ position: 'relative' }}>
+        <Avatar
+          initials={user.avatarInitials}
+          color={user.avatarColor}
+          size={50}
+          imageUrl={user.avatar}
+        />
+        {connection.note && (
+          <View style={convStyles.noteBadge}>
+            <Ionicons name="chatbox-ellipses" size={10} color={Colors.white} />
+          </View>
+        )}
       </View>
-      <Text style={convStyles.lastMsg} numberOfLines={1}>
-        {connection.note ? `Note : ${connection.note}` : 'Demande de connexion envoyée'}
-      </Text>
-    </View>
-  </View>
-);
+
+      <View style={convStyles.info}>
+        <View style={convStyles.topRow}>
+          <Text style={convStyles.name}>{getDisplayName(user)}</Text>
+          <View style={convStyles.pendingTag}>
+            <Text style={convStyles.pendingTagText}>En attente</Text>
+          </View>
+        </View>
+        <Text style={convStyles.lastMsg} numberOfLines={1}>
+          {connection.note ? `"${connection.note}"` : 'Demande de connexion envoyée'}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 const ConversationRow: React.FC<{ conversation: Conversation }> = ({ conversation }) => {
   const router = useRouter();
@@ -304,5 +319,18 @@ const convStyles = StyleSheet.create({
     fontSize: FontSize.xs,
     fontWeight: FontWeight.medium,
     color: Colors.badgeOrange,
+  },
+  noteBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.white,
   },
 });

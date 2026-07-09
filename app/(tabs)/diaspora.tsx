@@ -688,5 +688,5 @@ const styles = StyleSheet.create({
   },
   emptyDesc: { fontSize: FontSize.sm, color: Colors.textTertiary },
 
-  listContent: { paddingBottom: Spacing.xxl },
+  listContent: { paddingBottom: 90 },
 });

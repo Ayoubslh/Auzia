@@ -2,12 +2,12 @@ import { useState } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  TextInput,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -17,12 +17,10 @@ import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { supabase } from '../../supabase/client';
-import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { useAuthStore } from '../../store/authStore';
 import { requireConnection } from '../../utils/network';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius, Shadow } from '../../theme';
-
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -30,6 +28,7 @@ export default function LoginScreen() {
   const { login } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -79,81 +78,101 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+        style={styles.kav}
       >
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.header}>
+        <View style={styles.container}>
+
+          {/* Branding */}
+          <View style={styles.brand}>
             <View style={styles.logoCircle}>
-              <Ionicons name="earth" size={36} color={Colors.primary} />
+              <Ionicons name="earth" size={38} color={Colors.white} />
             </View>
             <Text style={styles.appName}>Auzia</Text>
-            <Text style={styles.appSubtitle}>{t('auth.tagline')}</Text>
+            <Text style={styles.appTagline}>{t('auth.tagline')}</Text>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.greeting}>{t('auth.login_title')}</Text>
-            <Text style={styles.subtitle}>{t('auth.login_subtitle')}</Text>
+          {/* Form */}
+          <View style={styles.form}>
+            <View style={styles.formTop}>
+              <Text style={styles.title}>{t('auth.login_title')}</Text>
+              <Text style={styles.subtitle}>{t('auth.login_subtitle')}</Text>
 
-            <TouchableOpacity style={styles.googleBtn} onPress={handleGoogle} activeOpacity={0.8}>
-              <Text style={styles.googleIcon}>G</Text>
-              <Text style={styles.googleLabel}>{t('auth.google_signin')}</Text>
-            </TouchableOpacity>
+              {/* Google sign-in */}
+              <TouchableOpacity style={styles.googleBtn} onPress={handleGoogle} activeOpacity={0.8}>
+                <Text style={styles.googleG}>G</Text>
+                <Text style={styles.googleLabel}>{t('auth.google_signin')}</Text>
+              </TouchableOpacity>
 
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>{t('auth.or_email')}</Text>
-              <View style={styles.dividerLine} />
+              {/* Divider */}
+              <View style={styles.divider}>
+                <View style={styles.divLine} />
+                <Text style={styles.divText}>{t('auth.or_email')}</Text>
+                <View style={styles.divLine} />
+              </View>
+
+              {/* Email */}
+              <View style={styles.inputField}>
+                <Ionicons name="mail-outline" size={18} color={Colors.textTertiary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.inputText}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholder={t('auth.email_placeholder')}
+                  placeholderTextColor={Colors.textTertiary}
+                />
+              </View>
+
+              {/* Password */}
+              <View style={styles.inputField}>
+                <Ionicons name="lock-closed-outline" size={18} color={Colors.textTertiary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.inputText}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  placeholder={t('auth.password_placeholder')}
+                  placeholderTextColor={Colors.textTertiary}
+                />
+                <TouchableOpacity onPress={() => setShowPassword((v) => !v)} style={styles.eyeBtn}>
+                  <Ionicons
+                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                    size={18}
+                    color={Colors.textTertiary}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Forgot password */}
+              <TouchableOpacity style={styles.forgotRow}>
+                <Text style={styles.forgotText}>{t('auth.forgot_password')}</Text>
+              </TouchableOpacity>
             </View>
 
-            <Input
-              label={t('auth.email_label')}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholder={t('auth.email_placeholder')}
-              containerStyle={styles.inputContainer}
-            />
-
-            <Input
-              label={t('auth.password_label')}
-              value={password}
-              onChangeText={setPassword}
-              secureToggle
-              placeholder={t('auth.password_placeholder')}
-              containerStyle={styles.inputContainer}
-            />
-
-            <TouchableOpacity style={styles.forgotRow}>
-              <Text style={styles.forgotText}>{t('auth.forgot_password')}</Text>
-            </TouchableOpacity>
-
-            <Button
-              label={t('auth.sign_in')}
-              onPress={handleLogin}
-              loading={loading}
-              fullWidth
-              size="lg"
-              style={styles.loginBtn}
-            />
-
-            <TouchableOpacity
-              style={styles.createRow}
-              onPress={() => router.push('/auth/register' as any)}
-            >
-              <Text style={styles.createLabel}>{t('auth.no_account')}</Text>
-              <Text style={styles.createLink}>{t('auth.create_account')}</Text>
-            </TouchableOpacity>
+            {/* Bottom actions */}
+            <View style={styles.formBottom}>
+              <Button
+                label={t('auth.sign_in')}
+                onPress={handleLogin}
+                loading={loading}
+                fullWidth
+                size="lg"
+              />
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>{t('auth.no_account')}</Text>
+                <TouchableOpacity onPress={() => router.push('/auth/register' as any)}>
+                  <Text style={styles.switchLink}>{t('auth.create_account')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        </ScrollView>
+
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -161,42 +180,40 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.white },
-  scroll: { flexGrow: 1 },
+  kav: { flex: 1 },
+  container: { flex: 1, paddingHorizontal: Spacing.xl },
 
-  header: {
+  brand: {
     alignItems: 'center',
     paddingTop: Spacing.xxl,
-    paddingBottom: Spacing.xxxl,
-    gap: Spacing.sm,
-    backgroundColor: Colors.primary,
+    paddingBottom: Spacing.xl,
+    gap: Spacing.xs,
   },
   logoCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.white,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    ...Shadow.md,
   },
-  appName: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.white },
-  appSubtitle: { fontSize: FontSize.base, color: 'rgba(255,255,255,0.8)' },
+  appName: {
+    fontSize: FontSize.xxl,
+    fontWeight: FontWeight.bold,
+    color: Colors.primary,
+    marginTop: Spacing.sm,
+  },
+  appTagline: { fontSize: FontSize.sm, color: Colors.textTertiary },
 
-  card: {
-    flex: 1,
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.xxxl,
-    gap: Spacing.base,
-  },
-  greeting: { fontSize: FontSize.xxl, fontWeight: FontWeight.bold, color: Colors.textPrimary },
+  form: { flex: 1, justifyContent: 'space-between', paddingBottom: Spacing.base },
+  formTop: { gap: Spacing.md },
+
+  title: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.textPrimary },
   subtitle: {
-    fontSize: FontSize.base,
+    fontSize: FontSize.sm,
     color: Colors.textSecondary,
     marginTop: -Spacing.sm,
-    marginBottom: Spacing.xs,
   },
 
   googleBtn: {
@@ -204,28 +221,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    height: 48,
+    height: 46,
     borderRadius: BorderRadius.full,
     borderWidth: 1.5,
     borderColor: Colors.border,
     backgroundColor: Colors.white,
     ...Shadow.sm,
   },
-  googleIcon: { fontSize: 18, fontWeight: FontWeight.bold, color: Colors.google },
+  googleG: { fontSize: 17, fontWeight: FontWeight.bold, color: Colors.google },
   googleLabel: { fontSize: FontSize.base, fontWeight: FontWeight.medium, color: Colors.textPrimary },
 
   divider: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
-  dividerText: { fontSize: FontSize.sm, color: Colors.textTertiary },
+  divLine: { flex: 1, height: 1, backgroundColor: Colors.border },
+  divText: { fontSize: FontSize.xs, color: Colors.textTertiary },
 
-  inputContainer: { marginBottom: Spacing.xs },
+  inputField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 46,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.background,
+    paddingHorizontal: Spacing.base,
+  },
+  inputIcon: { marginRight: Spacing.sm },
+  inputText: {
+    flex: 1,
+    fontSize: FontSize.base,
+    color: Colors.textPrimary,
+  },
+  eyeBtn: { padding: Spacing.xs },
 
-  forgotRow: { alignItems: 'flex-end', marginTop: -Spacing.xs },
+  forgotRow: { alignSelf: 'flex-end', marginTop: -Spacing.xs },
   forgotText: { fontSize: FontSize.sm, color: Colors.primary, fontWeight: FontWeight.medium },
 
-  loginBtn: { marginTop: Spacing.xs },
-
-  createRow: { flexDirection: 'row', justifyContent: 'center', marginTop: Spacing.sm },
-  createLabel: { fontSize: FontSize.base, color: Colors.textSecondary },
-  createLink: { fontSize: FontSize.base, color: Colors.primary, fontWeight: FontWeight.semibold },
+  formBottom: { gap: Spacing.md },
+  switchRow: { flexDirection: 'row', justifyContent: 'center', gap: 4 },
+  switchLabel: { fontSize: FontSize.base, color: Colors.textSecondary },
+  switchLink: { fontSize: FontSize.base, color: Colors.primary, fontWeight: FontWeight.semibold },
 });

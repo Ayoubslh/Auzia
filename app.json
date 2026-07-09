@@ -54,8 +54,10 @@
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Auzia accède à vos photos pour choisir votre photo de profil.",
         "NSCameraUsageDescription": "Auzia utilise votre caméra pour prendre votre photo de profil.",
-        "NSPhotoLibraryAddUsageDescription": "Auzia enregistre votre photo de profil dans vos photos."
-      }
+        "NSPhotoLibraryAddUsageDescription": "Auzia enregistre votre photo de profil dans vos photos.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.kinishiro.Auzia"
     },
     "android": {
       "adaptiveIcon": {

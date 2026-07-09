@@ -105,7 +105,7 @@ export default function ProfileScreen() {
             {currentUser.countryOfResidenceFlag}
           </Text>
           <Text style={styles.handle}>
-            @{currentUser.nickname} · {currentUser.status} · {currentUser.cityOfResidence}
+            {currentUser.nickname ? `@${currentUser.nickname} · ` : ''}{currentUser.status ? `${currentUser.status} · ` : ''}{currentUser.cityOfResidence}
           </Text>
         </View>
 

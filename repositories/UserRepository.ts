@@ -32,6 +32,7 @@ function toUser(row: any): User {
     showOnMap:                 row.show_on_map ?? true,
     allowChat:                 row.allow_chat ?? true,
     nameDisplayMode:           row.name_display_mode ?? 'nickname',
+    pushToken:                 row.push_token ?? undefined,
   };
 }
 
@@ -113,6 +114,7 @@ class UserRepository implements IUserRepository {
         show_on_map:               updates.showOnMap,
         allow_chat:                updates.allowChat,
         name_display_mode:         updates.nameDisplayMode,
+        push_token:                updates.pushToken,
         has_completed_onboarding:  true,
       })
       .eq('id', user.id)

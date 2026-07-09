@@ -24,14 +24,12 @@ export default function OptInfoScreen() {
 
   const [domain, setDomain] = useState('');
   const [status, setStatus] = useState('');
-  const [phone, setPhone] = useState('');
   const [linkedin, setLinkedin] = useState('');
   const [instagram, setInstagram] = useState('');
-  const [about, setAbout] = useState('');
 
   const handleJoin = async () => {
     try {
-      await completeOnboarding({ workField: domain, status, phoneNumber: phone, linkedin, instagram, aboutMe: about });
+      await completeOnboarding({ workField: domain, status, linkedin, instagram });
       router.replace('/(tabs)/diaspora');
     } catch (e: any) {
       Alert.alert('Erreur', e.message ?? 'Impossible de finaliser le profil');
@@ -74,14 +72,6 @@ export default function OptInfoScreen() {
               containerStyle={styles.input}
             />
             <Input
-              label={t('onboarding.phone_label')}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder={t('onboarding.phone_placeholder')}
-              keyboardType="phone-pad"
-              containerStyle={styles.input}
-            />
-            <Input
               label={t('onboarding.linkedin_label')}
               value={linkedin}
               onChangeText={setLinkedin}
@@ -96,16 +86,6 @@ export default function OptInfoScreen() {
               placeholder={t('onboarding.instagram_placeholder')}
               autoCapitalize="none"
               containerStyle={styles.input}
-            />
-            <Input
-              label={t('onboarding.about_label')}
-              value={about}
-              onChangeText={setAbout}
-              placeholder={t('onboarding.about_placeholder')}
-              multiline
-              numberOfLines={4}
-              containerStyle={styles.input}
-              style={styles.textarea}
             />
           </View>
 
@@ -151,7 +131,6 @@ const styles = StyleSheet.create({
 
   form: { paddingHorizontal: Spacing.xl, gap: Spacing.md },
   input: {},
-  textarea: { minHeight: 90, ...Platform.select({ android: { textAlignVertical: 'top' as const } }), paddingTop: Spacing.sm },
 
   dots: { flexDirection: 'row', gap: 6, marginTop: Spacing.xl, alignSelf: 'center' },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.border },

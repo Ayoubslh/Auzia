@@ -44,10 +44,10 @@ export default function ReqInfoScreen() {
   const { updateProfile } = useAuthStore();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [nickname, setNickname] = useState('');
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [phone, setPhone] = useState('');
+  const [aboutMe, setAboutMe] = useState('');
   const [selectedCode, setSelectedCode] = useState<PhoneCode>(PHONE_CODES[0]);
   const [codePickerOpen, setCodePickerOpen] = useState(false);
   const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
@@ -57,9 +57,15 @@ export default function ReqInfoScreen() {
     ? selectedCountry.cities.map((c) => ({ label: c, value: c }))
     : [];
 
-  const canProceed = !!(firstName.trim() && lastName.trim() && nickname.trim() && country.trim() && city.trim() && phone.trim());
+  const canProceed = !!(
+    firstName.trim() &&
+    lastName.trim() &&
+    country.trim() &&
+    city.trim() &&
+    phone.trim() &&
+    aboutMe.trim()
+  );
 
-  // Pre-fill phone from register step (stored in Supabase auth metadata)
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       const stored = data.user?.user_metadata?.phone_number as string | undefined;
@@ -82,7 +88,7 @@ export default function ReqInfoScreen() {
   const handleNext = async () => {
     const flag = countriesData.find((c) => c.country === country)?.flag ?? '';
     const coords = getCityCoordinates(city);
-    const initials = `${firstName.trim()[0] ?? ''}${lastName.trim()[0] ?? ''}`.toUpperCase() || nickname.trim().slice(0, 2).toUpperCase();
+    const initials = `${firstName.trim()[0] ?? ''}${lastName.trim()[0] ?? ''}`.toUpperCase();
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id;
@@ -93,12 +99,12 @@ export default function ReqInfoScreen() {
       await updateProfile({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        nickname: nickname.trim(),
         countryOfResidence: country,
         countryOfResidenceFlag: flag,
         cityOfResidence: city,
         avatarInitials: initials,
         phoneNumber: `${selectedCode.code}${phone.trim()}`,
+        aboutMe: aboutMe.trim(),
         avatar: avatarUrl,
         ...(coords ?? {}),
       });
@@ -123,6 +129,7 @@ export default function ReqInfoScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Avatar picker */}
           <View style={styles.avatarSection}>
             <TouchableOpacity
               style={styles.avatarCircle}
@@ -162,14 +169,6 @@ export default function ReqInfoScreen() {
               />
             </View>
 
-            <Input
-              label={t('onboarding.pseudo_label')}
-              value={nickname}
-              onChangeText={setNickname}
-              placeholder={t('onboarding.pseudo_placeholder')}
-              autoCapitalize="none"
-              containerStyle={styles.input}
-            />
             <Select
               label={t('onboarding.country_label')}
               value={country}
@@ -188,7 +187,7 @@ export default function ReqInfoScreen() {
               containerStyle={styles.input}
             />
 
-            {/* Phone with country code picker */}
+            {/* Phone with country code */}
             <View style={styles.phoneContainer}>
               <Text style={styles.phoneLabel}>{t('auth.phone_label')}</Text>
               <View style={styles.phoneRow}>
@@ -212,6 +211,18 @@ export default function ReqInfoScreen() {
                 />
               </View>
             </View>
+
+            {/* About me — mandatory */}
+            <Input
+              label={t('onboarding.about_label')}
+              value={aboutMe}
+              onChangeText={setAboutMe}
+              placeholder={t('onboarding.about_placeholder')}
+              multiline
+              numberOfLines={3}
+              containerStyle={styles.input}
+              style={styles.textarea}
+            />
           </View>
 
           <View style={styles.dots}>
@@ -300,6 +311,11 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   input: {},
+  textarea: {
+    minHeight: 80,
+    ...Platform.select({ android: { textAlignVertical: 'top' as const } }),
+    paddingTop: Spacing.sm,
+  },
 
   phoneContainer: { gap: Spacing.xs },
   phoneLabel: {
@@ -327,11 +343,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
   },
   codeFlag: { fontSize: 18 },
-  codeText: {
-    fontSize: FontSize.base,
-    fontWeight: FontWeight.medium,
-    color: Colors.textPrimary,
-  },
+  codeText: { fontSize: FontSize.base, fontWeight: FontWeight.medium, color: Colors.textPrimary },
   phoneDivider: { width: 1, height: 28, backgroundColor: Colors.border },
   phoneInput: {
     flex: 1,

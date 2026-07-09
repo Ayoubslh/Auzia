@@ -2,14 +2,13 @@ import { useState } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
-  Alert,
   TextInput,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,7 +17,6 @@ import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { supabase } from '../../supabase/client';
-import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { FilterSheet } from '../../components/ui/FilterSheet';
 import { useAuthStore } from '../../store/authStore';
@@ -43,6 +41,8 @@ export default function RegisterScreen() {
   const [phone, setPhone] = useState('');
   const [selectedCode, setSelectedCode] = useState<PhoneCode>(PHONE_CODES[0]);
   const [codePickerOpen, setCodePickerOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirm?: string }>({});
 
@@ -107,78 +107,104 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+        style={styles.kav}
       >
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+        <View style={styles.container}>
+
+          {/* Compact header: back + inline branding */}
           <View style={styles.header}>
-            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
-              <Ionicons name="arrow-back" size={20} color={Colors.white} />
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
+              <Ionicons name="arrow-back" size={20} color={Colors.textPrimary} />
             </TouchableOpacity>
-            <View style={styles.logoCircle}>
-              <Ionicons name="earth" size={36} color={Colors.primary} />
+            <View style={styles.brand}>
+              <View style={styles.logoCircle}>
+                <Ionicons name="earth" size={20} color={Colors.white} />
+              </View>
+              <Text style={styles.appName}>Auzia</Text>
             </View>
-            <Text style={styles.appName}>Auzia</Text>
-            <Text style={styles.appSubtitle}>{t('auth.tagline')}</Text>
+            {/* Spacer to center the brand */}
+            <View style={styles.headerSpacer} />
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.greeting}>{t('auth.register_title')}</Text>
-            <Text style={styles.subtitle}>{t('auth.register_subtitle')}</Text>
+          {/* Form */}
+          <View style={styles.form}>
+            <View style={styles.formTop}>
+              <Text style={styles.title}>{t('auth.register_title')}</Text>
+              <Text style={styles.subtitle}>{t('auth.register_subtitle')}</Text>
 
-            <TouchableOpacity style={styles.googleBtn} onPress={handleGoogle} activeOpacity={0.8}>
-              <Text style={styles.googleIcon}>G</Text>
-              <Text style={styles.googleLabel}>{t('auth.google_register')}</Text>
-            </TouchableOpacity>
+              {/* Google register */}
+              <TouchableOpacity style={styles.googleBtn} onPress={handleGoogle} activeOpacity={0.8}>
+                <Text style={styles.googleG}>G</Text>
+                <Text style={styles.googleLabel}>{t('auth.google_register')}</Text>
+              </TouchableOpacity>
 
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>{t('auth.or_email')}</Text>
-              <View style={styles.dividerLine} />
-            </View>
+              {/* Divider */}
+              <View style={styles.divider}>
+                <View style={styles.divLine} />
+                <Text style={styles.divText}>{t('auth.or_email')}</Text>
+                <View style={styles.divLine} />
+              </View>
 
-            <Input
-              label={t('auth.email_label')}
-              value={email}
-              onChangeText={(v) => { setEmail(v); setErrors((e) => ({ ...e, email: undefined })); }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholder={t('auth.email_placeholder')}
-              error={errors.email}
-              containerStyle={styles.inputContainer}
-            />
+              {/* Email */}
+              <View style={[styles.inputField, errors.email ? styles.inputError : undefined]}>
+                <Ionicons name="mail-outline" size={17} color={Colors.textTertiary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.inputText}
+                  value={email}
+                  onChangeText={(v) => { setEmail(v); setErrors((e) => ({ ...e, email: undefined })); }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholder={t('auth.email_placeholder')}
+                  placeholderTextColor={Colors.textTertiary}
+                />
+              </View>
 
-            <Input
-              label={t('auth.password_label')}
-              value={password}
-              onChangeText={(v) => { setPassword(v); setErrors((e) => ({ ...e, password: undefined })); }}
-              secureToggle
-              placeholder={t('auth.error_min_chars')}
-              error={errors.password}
-              containerStyle={styles.inputContainer}
-            />
+              {/* Password */}
+              <View style={[styles.inputField, errors.password ? styles.inputError : undefined]}>
+                <Ionicons name="lock-closed-outline" size={17} color={Colors.textTertiary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.inputText}
+                  value={password}
+                  onChangeText={(v) => { setPassword(v); setErrors((e) => ({ ...e, password: undefined })); }}
+                  secureTextEntry={!showPassword}
+                  placeholder={t('auth.error_min_chars')}
+                  placeholderTextColor={Colors.textTertiary}
+                />
+                <TouchableOpacity onPress={() => setShowPassword((v) => !v)} style={styles.eyeBtn}>
+                  <Ionicons
+                    name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                    size={17}
+                    color={Colors.textTertiary}
+                  />
+                </TouchableOpacity>
+              </View>
 
-            <Input
-              label={t('auth.confirm_password_label')}
-              value={confirmPassword}
-              onChangeText={(v) => { setConfirmPassword(v); setErrors((e) => ({ ...e, confirm: undefined })); }}
-              secureToggle
-              placeholder={t('auth.confirm_password_placeholder')}
-              error={errors.confirm}
-              containerStyle={styles.inputContainer}
-            />
+              {/* Confirm password */}
+              <View style={[styles.inputField, errors.confirm ? styles.inputError : undefined]}>
+                <Ionicons name="shield-checkmark-outline" size={17} color={Colors.textTertiary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.inputText}
+                  value={confirmPassword}
+                  onChangeText={(v) => { setConfirmPassword(v); setErrors((e) => ({ ...e, confirm: undefined })); }}
+                  secureTextEntry={!showConfirm}
+                  placeholder={t('auth.confirm_password_placeholder')}
+                  placeholderTextColor={Colors.textTertiary}
+                />
+                <TouchableOpacity onPress={() => setShowConfirm((v) => !v)} style={styles.eyeBtn}>
+                  <Ionicons
+                    name={showConfirm ? 'eye-outline' : 'eye-off-outline'}
+                    size={17}
+                    color={Colors.textTertiary}
+                  />
+                </TouchableOpacity>
+              </View>
 
-            {/* Phone with country code picker */}
-            <View style={styles.phoneContainer}>
-              <Text style={styles.phoneLabel}>{t('auth.phone_label')}</Text>
-              <View style={styles.phoneRow}>
+              {/* Phone with country code */}
+              <View style={styles.inputField}>
                 <TouchableOpacity
                   style={styles.codeBtn}
                   onPress={() => setCodePickerOpen(true)}
@@ -186,11 +212,11 @@ export default function RegisterScreen() {
                 >
                   <Text style={styles.codeFlag}>{selectedCode.flag}</Text>
                   <Text style={styles.codeText}>{selectedCode.code}</Text>
-                  <Ionicons name="chevron-down" size={13} color={Colors.textTertiary} />
+                  <Ionicons name="chevron-down" size={12} color={Colors.textTertiary} />
                 </TouchableOpacity>
-                <View style={styles.phoneDivider} />
+                <View style={styles.phoneSep} />
                 <TextInput
-                  style={styles.phoneInput}
+                  style={[styles.inputText, { paddingLeft: Spacing.sm }]}
                   value={phone}
                   onChangeText={setPhone}
                   keyboardType="phone-pad"
@@ -198,30 +224,35 @@ export default function RegisterScreen() {
                   placeholderTextColor={Colors.textTertiary}
                 />
               </View>
+
+              {/* Terms */}
+              <Text style={styles.terms}>
+                {t('auth.terms_prefix')}
+                <Text style={styles.termsLink}>{t('auth.terms_link')}</Text>
+                {t('auth.terms_and')}
+                <Text style={styles.termsLink}>{t('auth.privacy_link')}</Text>.
+              </Text>
             </View>
 
-            <Text style={styles.terms}>
-              {t('auth.terms_prefix')}
-              <Text style={styles.termsLink}>{t('auth.terms_link')}</Text>
-              {t('auth.terms_and')}
-              <Text style={styles.termsLink}>{t('auth.privacy_link')}</Text>.
-            </Text>
-
-            <Button
-              label={t('auth.create_my_account')}
-              onPress={handleRegister}
-              loading={loading}
-              fullWidth
-              size="lg"
-              style={styles.registerBtn}
-            />
-
-            <TouchableOpacity style={styles.loginRow} onPress={() => router.back()}>
-              <Text style={styles.loginLabel}>{t('auth.already_account')}</Text>
-              <Text style={styles.loginLink}>{t('auth.sign_in_link')}</Text>
-            </TouchableOpacity>
+            {/* Bottom actions */}
+            <View style={styles.formBottom}>
+              <Button
+                label={t('auth.create_my_account')}
+                onPress={handleRegister}
+                loading={loading}
+                fullWidth
+                size="lg"
+              />
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>{t('auth.already_account')}</Text>
+                <TouchableOpacity onPress={() => router.back()}>
+                  <Text style={styles.switchLink}>{t('auth.sign_in_link')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        </ScrollView>
+
+        </View>
       </KeyboardAvoidingView>
 
       <FilterSheet
@@ -242,122 +273,111 @@ export default function RegisterScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.white },
-  scroll: { flexGrow: 1 },
+  kav: { flex: 1 },
+  container: { flex: 1, paddingHorizontal: Spacing.xl },
 
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: Spacing.xxl,
-    paddingBottom: Spacing.xxxl,
-    gap: Spacing.sm,
-    backgroundColor: Colors.primary,
+    paddingTop: Spacing.base,
+    paddingBottom: Spacing.md,
   },
   backBtn: {
-    position: 'absolute',
-    top: Spacing.xxl,
-    left: Spacing.base,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.background,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  brand: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
   },
   logoCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.white,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  appName: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.white },
-  appSubtitle: { fontSize: FontSize.base, color: 'rgba(255,255,255,0.8)' },
+  appName: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+    color: Colors.primary,
+  },
+  headerSpacer: { width: 40 },
 
-  card: {
-    flex: 1,
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.xxxl,
-    gap: Spacing.base,
-  },
-  greeting: { fontSize: FontSize.xxl, fontWeight: FontWeight.bold, color: Colors.textPrimary },
-  subtitle: {
-    fontSize: FontSize.base,
-    color: Colors.textSecondary,
-    marginTop: -Spacing.sm,
-    marginBottom: Spacing.xs,
-  },
+  form: { flex: 1, justifyContent: 'space-between', paddingBottom: Spacing.base },
+  formTop: { gap: Spacing.sm },
+
+  title: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.textPrimary },
+  subtitle: { fontSize: FontSize.sm, color: Colors.textSecondary },
 
   googleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    height: 48,
+    height: 44,
     borderRadius: BorderRadius.full,
     borderWidth: 1.5,
     borderColor: Colors.border,
     backgroundColor: Colors.white,
     ...Shadow.sm,
   },
-  googleIcon: { fontSize: 18, fontWeight: FontWeight.bold, color: Colors.google },
+  googleG: { fontSize: 16, fontWeight: FontWeight.bold, color: Colors.google },
   googleLabel: { fontSize: FontSize.base, fontWeight: FontWeight.medium, color: Colors.textPrimary },
 
   divider: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
-  dividerText: { fontSize: FontSize.sm, color: Colors.textTertiary },
+  divLine: { flex: 1, height: 1, backgroundColor: Colors.border },
+  divText: { fontSize: FontSize.xs, color: Colors.textTertiary },
 
-  inputContainer: { marginBottom: Spacing.xs },
-
-  phoneContainer: { gap: Spacing.xs, marginBottom: Spacing.xs },
-  phoneLabel: {
-    fontSize: FontSize.xs,
-    fontWeight: FontWeight.semibold,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  phoneRow: {
+  inputField: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: 46,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: BorderRadius.md,
-    backgroundColor: Colors.white,
-    minHeight: 48,
-    overflow: 'hidden',
+    backgroundColor: Colors.background,
+    paddingHorizontal: Spacing.base,
   },
+  inputError: { borderColor: Colors.error },
+  inputIcon: { marginRight: Spacing.sm },
+  inputText: {
+    flex: 1,
+    fontSize: FontSize.base,
+    color: Colors.textPrimary,
+  },
+  eyeBtn: { padding: Spacing.xs },
+
   codeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
   },
-  codeFlag: { fontSize: 18 },
+  codeFlag: { fontSize: 16 },
   codeText: {
-    fontSize: FontSize.base,
+    fontSize: FontSize.sm,
     fontWeight: FontWeight.medium,
     color: Colors.textPrimary,
   },
-  phoneDivider: { width: 1, height: 28, backgroundColor: Colors.border },
-  phoneInput: {
-    flex: 1,
-    fontSize: FontSize.base,
-    color: Colors.textPrimary,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
-  },
+  phoneSep: { width: 1, height: 24, backgroundColor: Colors.border, marginHorizontal: Spacing.sm },
 
-  terms: { fontSize: FontSize.xs, color: Colors.textTertiary, lineHeight: 18, marginTop: -Spacing.xs },
+  terms: {
+    fontSize: FontSize.xs,
+    color: Colors.textTertiary,
+    lineHeight: 17,
+  },
   termsLink: { color: Colors.primary, fontWeight: FontWeight.medium },
 
-  registerBtn: { marginTop: Spacing.xs },
-
-  loginRow: { flexDirection: 'row', justifyContent: 'center', marginTop: Spacing.sm },
-  loginLabel: { fontSize: FontSize.base, color: Colors.textSecondary },
-  loginLink: { fontSize: FontSize.base, color: Colors.primary, fontWeight: FontWeight.semibold },
+  formBottom: { gap: Spacing.md },
+  switchRow: { flexDirection: 'row', justifyContent: 'center', gap: 4 },
+  switchLabel: { fontSize: FontSize.base, color: Colors.textSecondary },
+  switchLink: { fontSize: FontSize.base, color: Colors.primary, fontWeight: FontWeight.semibold },
 });

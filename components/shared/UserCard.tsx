@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -82,7 +82,11 @@ export const UserCard: React.FC<UserCardProps> = ({
   };
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => router.push(`/user/${user.id}` as any)}
+      activeOpacity={0.96}
+    >
       <View style={styles.header}>
         <Avatar
           initials={user.avatarInitials}
@@ -90,7 +94,6 @@ export const UserCard: React.FC<UserCardProps> = ({
           size={44}
           imageUrl={user.avatar}
         />
-
         <View style={styles.headerInfo}>
           <View style={styles.nameRow}>
             <Text style={styles.name} numberOfLines={1}>{getDisplayName(user)}</Text>
@@ -120,17 +123,11 @@ export const UserCard: React.FC<UserCardProps> = ({
         <Text style={styles.about} numberOfLines={2}>{user.aboutMe}</Text>
       ) : null}
 
+      {/* Action button only — card tap goes to profile */}
       <View style={styles.actions}>
-        <Button
-          label={t('user_card.see_profile')}
-          variant="outline"
-          size="sm"
-          onPress={() => router.push(`/user/${user.id}`)}
-          style={styles.profileBtn}
-        />
         {renderAction()}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -154,8 +151,7 @@ const styles = StyleSheet.create({
   metaText: { fontSize: FontSize.sm, color: Colors.textTertiary },
   dot: { width: 3, height: 3, borderRadius: 2, backgroundColor: Colors.textTertiary },
   about: { fontSize: FontSize.sm, color: Colors.textSecondary, lineHeight: 18 },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.xs },
-  profileBtn: { flex: 1 },
+  actions: { flexDirection: 'row', alignItems: 'center', marginTop: Spacing.xs },
   actionBtn: { flex: 1 },
   disabledBtn: {
     flexDirection: 'row',

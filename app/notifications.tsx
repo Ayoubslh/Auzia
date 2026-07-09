@@ -62,45 +62,76 @@ export default function NotificationsScreen() {
         renderItem={({ item }) => {
           const style = TYPE_ICON[item.type] ?? TYPE_ICON.announcement;
           const hasActor = !!item.actorInitials;
+          const canViewProfile = item.type === 'connection_request' && !!item.actionUserId;
 
           return (
-            <View style={[styles.row, !item.read && styles.rowUnread]}>
+            <TouchableOpacity
+              style={[styles.row, !item.read && styles.rowUnread]}
+              activeOpacity={canViewProfile ? 0.7 : 1}
+              onPress={() => {
+                if (canViewProfile) router.push(`/user/${item.actionUserId}` as any);
+              }}
+            >
               {hasActor ? (
                 <Avatar
                   initials={item.actorInitials!}
                   color={item.actorColor ?? Colors.primary}
                   size={44}
+                  imageUrl={item.actorImageUrl}
                 />
               ) : (
                 <View style={[styles.iconCircle, { backgroundColor: style.bg }]}>
                   <Ionicons name={style.icon as any} size={20} color={style.color} />
                 </View>
               )}
+
               <View style={styles.info}>
                 <Text style={styles.content}>{item.content}</Text>
+
                 {item.type === 'connection_request' && (
                   <View style={styles.actions}>
                     <TouchableOpacity
                       style={styles.acceptBtn}
-                      onPress={() => handleRespond(item.connectionId, item.actionUserId, 'accepted', item.id)}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleRespond(item.connectionId, item.actionUserId, 'accepted', item.id);
+                      }}
                     >
                       <Text style={styles.acceptText}>{t('notifications.accept')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.rejectBtn}
-                      onPress={() => handleRespond(item.connectionId, item.actionUserId, 'rejected', item.id)}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleRespond(item.connectionId, item.actionUserId, 'rejected', item.id);
+                      }}
                     >
                       <Text style={styles.rejectText}>{t('notifications.refuse')}</Text>
                     </TouchableOpacity>
+                    {!!item.actionUserId && (
+                      <TouchableOpacity
+                        style={styles.profileBtn}
+                        onPress={() => router.push(`/user/${item.actionUserId}` as any)}
+                      >
+                        <Text style={styles.profileBtnText}>{t('common.see_profile')}</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
               </View>
+
               {!item.read && <View style={styles.unreadDot} />}
-            </View>
+            </TouchableOpacity>
           );
         }}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Ionicons name="notifications-outline" size={40} color={Colors.textTertiary} />
+            <Text style={styles.emptyText}>{t('notifications.empty')}</Text>
+          </View>
+        }
       />
     </SafeAreaView>
   );
@@ -146,7 +177,7 @@ const styles = StyleSheet.create({
   },
   info: { flex: 1, gap: Spacing.sm },
   content: { fontSize: FontSize.base, color: Colors.textPrimary, lineHeight: 20 },
-  actions: { flexDirection: 'row', gap: Spacing.sm },
+  actions: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
   acceptBtn: {
     paddingVertical: Spacing.xs,
     paddingHorizontal: Spacing.md,
@@ -162,5 +193,19 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
   },
   rejectText: { fontSize: FontSize.sm, color: Colors.textSecondary },
+  profileBtn: {
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: BorderRadius.full,
+  },
+  profileBtnText: {
+    fontSize: FontSize.sm,
+    color: Colors.primary,
+    fontWeight: FontWeight.medium,
+  },
   unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.primary, marginTop: 6 },
+  empty: { alignItems: 'center', paddingTop: 80, gap: Spacing.md },
+  emptyText: { fontSize: FontSize.base, color: Colors.textTertiary },
 });

@@ -23,6 +23,7 @@ function toConnection(row: any): Connection {
       lastName:        row.receiver.last_name ?? '',
       avatarInitials:  row.receiver.avatar_initials ?? '',
       avatarColor:     row.receiver.avatar_color ?? '#2E7D32',
+      avatar:          row.receiver.avatar_url ?? undefined,
       nickname:        row.receiver.nickname ?? '',
       nameDisplayMode: row.receiver.name_display_mode ?? 'nickname',
     } : undefined,
@@ -43,7 +44,7 @@ class ConnectionRepository implements IConnectionRepository {
   async getSentRequests(senderId: string): Promise<Connection[]> {
     const { data, error } = await supabase
       .from('connections')
-      .select('*, receiver:profiles!receiver_id(id,first_name,last_name,avatar_initials,avatar_color,nickname,name_display_mode)')
+      .select('*, receiver:profiles!receiver_id(id,first_name,last_name,avatar_initials,avatar_color,avatar_url,nickname,name_display_mode)')
       .eq('sender_id', senderId)
       .order('created_at', { ascending: false });
     if (error) throw error;

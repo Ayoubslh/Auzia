@@ -51,14 +51,15 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
         style={styles.backdrop}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <TouchableOpacity style={styles.backdropTouch} activeOpacity={1} onPress={handleClose} />
+        {/* Tappable area around the dialog */}
+        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={handleClose} />
 
-        <View style={styles.sheet}>
+        <View style={styles.dialog}>
           <View style={styles.header}>
-            <Avatar initials={avatarInitials} color={avatarColor} size={40} />
+            <Avatar initials={avatarInitials} color={avatarColor} size={44} />
             <View style={styles.headerText}>
-              <Text style={styles.title}>{t('connect_modal.title')}</Text>
-              <Text style={styles.userName}>{userName}</Text>
+              <Text style={styles.headerSub}>{t('connect_modal.title')}</Text>
+              <Text style={styles.headerName}>{userName}</Text>
             </View>
             <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
               <Ionicons name="close" size={18} color={Colors.textPrimary} />
@@ -77,14 +78,17 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
             maxLength={280}
           />
 
-          <Button
-            label={t('connect_modal.send_request')}
-            variant="primary"
-            size="lg"
-            fullWidth
-            onPress={handleSend}
-            style={styles.sendBtn}
-          />
+          <View style={styles.footer}>
+            <Text style={styles.charCount}>{note.length}/280</Text>
+            <Button
+              label={t('connect_modal.send_request')}
+              variant="primary"
+              size="lg"
+              fullWidth
+              onPress={handleSend}
+              style={styles.sendBtn}
+            />
+          </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -92,37 +96,57 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  backdropTouch: { flex: 1 },
-  sheet: {
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: Spacing.xl,
-    gap: Spacing.sm,
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
   },
-  header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.sm },
+  dialog: {
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    padding: Spacing.xl,
+    width: '100%',
+    gap: Spacing.md,
+    // Ensure the dialog renders above the backdrop touch
+    zIndex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
   headerText: { flex: 1 },
-  title: { fontSize: FontSize.sm, color: Colors.textSecondary },
-  userName: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.textPrimary },
+  headerSub: { fontSize: FontSize.xs, color: Colors.textSecondary, marginBottom: 2 },
+  headerName: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.textPrimary },
   closeBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: Colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { fontSize: FontSize.xs, fontWeight: FontWeight.semibold, color: Colors.textSecondary, letterSpacing: 0.5 },
+  label: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semibold,
+    color: Colors.textSecondary,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
   textarea: {
-    minHeight: 100,
+    minHeight: 110,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     padding: Spacing.base,
     fontSize: FontSize.base,
     color: Colors.textPrimary,
+    backgroundColor: Colors.background,
     ...Platform.select({ android: { textAlignVertical: 'top' as const } }),
   },
-  sendBtn: { marginTop: Spacing.sm, marginBottom: Spacing.sm },
+  footer: { gap: Spacing.sm },
+  charCount: { fontSize: FontSize.xs, color: Colors.textTertiary, alignSelf: 'flex-end' },
+  sendBtn: {},
 });

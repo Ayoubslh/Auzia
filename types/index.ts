@@ -30,6 +30,7 @@ export interface User {
   showOnMap?: boolean;
   allowChat?: boolean;
   nameDisplayMode?: 'nickname' | 'fullname';
+  pushToken?: string;
 }
 
 export interface CurrentUser extends User {
@@ -46,6 +47,7 @@ export interface ConnectionUser {
   lastName: string;
   avatarInitials: string;
   avatarColor: string;
+  avatar?: string;
   nickname: string;
   nameDisplayMode: 'nickname' | 'fullname';
 }
@@ -195,6 +197,7 @@ export interface Notification {
   connectionId?: string;
   actorInitials?: string;
   actorColor?: string;
+  actorImageUrl?: string;
 }
 
 // ─── Service / Facture ───────────────────────────────────────────────────────

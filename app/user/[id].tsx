@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Alert,
+  Linking,
 } from 'react-native';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -49,6 +50,7 @@ export default function UserDetailScreen() {
 
   const storeConnection = sentRequests.find((r) => r.receiverId === id);
   const connectionStatus: ConnectionStatus | null = storeConnection?.status ?? fetchedStatus;
+  const isConnected = connectionStatus === 'accepted';
 
   useEffect(() => {
     if (id) userRepository.getUserById(id).then(setUser);
@@ -65,6 +67,7 @@ export default function UserDetailScreen() {
   if (!user) return null;
 
   const displayName = getDisplayName(user);
+  const conversationId = currentUser ? [currentUser.id, user.id].sort().join('_') : null;
 
   const handleSendConnectRequest = async (note: string) => {
     setConnectModalVisible(false);
@@ -77,15 +80,8 @@ export default function UserDetailScreen() {
 
   const handleMorePress = () => {
     Alert.alert(displayName, undefined, [
-      {
-        text: t('user.report'),
-        onPress: () => setReportSheetOpen(true),
-      },
-      {
-        text: t('user.block'),
-        style: 'destructive',
-        onPress: () => handleBlock(),
-      },
+      { text: t('user.report'), onPress: () => setReportSheetOpen(true) },
+      { text: t('user.block'), style: 'destructive', onPress: handleBlock },
       { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
@@ -101,7 +97,9 @@ export default function UserDetailScreen() {
           style: 'destructive',
           onPress: async () => {
             if (!currentUser) return;
-            await supabase.from('user_blocks').insert({ blocker_id: currentUser.id, blocked_id: user.id });
+            await supabase
+              .from('user_blocks')
+              .insert({ blocker_id: currentUser.id, blocked_id: user.id });
             showToast(t('user.blocked_toast'));
             router.back();
           },
@@ -114,24 +112,33 @@ export default function UserDetailScreen() {
     setReportSheetOpen(false);
     if (!currentUser) return;
     const reason = t(`user.${reasonKey}`);
-    await supabase.from('user_reports').insert({ reporter_id: currentUser.id, reported_id: user.id, reason });
+    await supabase
+      .from('user_reports')
+      .insert({ reporter_id: currentUser.id, reported_id: user.id, reason });
     showToast(t('user.report_sent'));
   };
 
-  const conversationId = currentUser
-    ? [currentUser.id, user.id].sort().join('_')
-    : null;
+  const openLinkedin = () => {
+    if (!user.linkedin) return;
+    const url = user.linkedin.startsWith('http') ? user.linkedin : `https://${user.linkedin}`;
+    Linking.openURL(url);
+  };
+
+  const openInstagram = () => {
+    if (!user.instagram) return;
+    Linking.openURL(`https://instagram.com/${user.instagram.replace('@', '')}`);
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor={Colors.primary} />
 
       <View style={styles.coverHeader}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.white} />
         </TouchableOpacity>
         {currentUser?.id !== user.id && (
-          <TouchableOpacity onPress={handleMorePress} style={styles.backBtn}>
+          <TouchableOpacity onPress={handleMorePress} style={styles.headerBtn}>
             <Ionicons name="ellipsis-horizontal" size={22} color={Colors.white} />
           </TouchableOpacity>
         )}
@@ -141,32 +148,40 @@ export default function UserDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingBottom: Spacing.xxl + insets.bottom }]}
       >
+        {/* Cover + Avatar */}
         <View style={styles.coverSection}>
           <View style={styles.cover} />
           <View style={styles.avatarWrap}>
-            <Avatar initials={user.avatarInitials} color={user.avatarColor} size={72} showBorder />
+            <Avatar
+              initials={user.avatarInitials}
+              color={user.avatarColor}
+              size={72}
+              imageUrl={user.avatar}
+              showBorder
+            />
           </View>
         </View>
 
+        {/* Identity */}
         <View style={styles.identitySection}>
-          <View style={styles.nameRow}>
-            <Text style={styles.name}>
-              {displayName} {user.countryOfResidenceFlag}
-            </Text>
-          </View>
+          <Text style={styles.name}>
+            {displayName} {user.countryOfResidenceFlag}
+          </Text>
           <Text style={styles.handle}>
-            @{user.nickname} · {user.status} · {user.cityOfResidence}
+            {user.status ? `${user.status} · ` : ''}{user.cityOfResidence}
           </Text>
 
           {currentUser?.id !== user.id && (
             <View style={styles.ctaRow}>
-              {connectionStatus === 'accepted' ? (
-                user.allowChat ? (
+              {isConnected ? (
+                user.allowChat !== false ? (
                   <Button
                     label="Message"
                     variant="primary"
                     size="md"
-                    onPress={() => conversationId && router.push(`/messages/${conversationId}` as any)}
+                    onPress={() =>
+                      conversationId && router.push(`/messages/${conversationId}` as any)
+                    }
                     fullWidth
                     style={styles.ctaBtn}
                   />
@@ -199,6 +214,7 @@ export default function UserDetailScreen() {
           )}
         </View>
 
+        {/* Stats */}
         <View style={styles.statsRow}>
           <StatItem value={user.connectionCount} label={t('profile.stat_connections')} />
           <View style={styles.statDivider} />
@@ -207,14 +223,22 @@ export default function UserDetailScreen() {
           <StatItem value={user.memberSince} label={t('profile.stat_since')} />
         </View>
 
+        {/* About */}
         {user.aboutMe && (
           <Section title={t('profile.about_section')}>
             <Text style={styles.aboutText}>{user.aboutMe}</Text>
           </Section>
         )}
 
+        {/* Info */}
         <Section title={t('profile.info_section')}>
-          <DetailRow icon="briefcase-outline" label={t('profile.field_domain')} value={user.workField} />
+          {!!user.workField && (
+            <DetailRow
+              icon="briefcase-outline"
+              label={t('profile.field_domain')}
+              value={user.workField}
+            />
+          )}
           <DetailRow
             icon="earth-outline"
             label={t('profile.field_origin')}
@@ -225,7 +249,40 @@ export default function UserDetailScreen() {
             label={t('profile.field_residence')}
             value={`${user.cityOfResidence}, ${user.countryOfResidence}`}
           />
+          {isConnected && !!user.phoneNumber && (
+            <DetailRow
+              icon="call-outline"
+              label={t('profile.field_phone')}
+              value={user.phoneNumber}
+            />
+          )}
         </Section>
+
+        {/* Social links */}
+        {(user.linkedin || user.instagram) && (
+          <View style={styles.socialRow}>
+            {user.linkedin && (
+              <TouchableOpacity
+                style={[styles.socialBtn, styles.linkedinBtn]}
+                onPress={openLinkedin}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="logo-linkedin" size={18} color="#0A66C2" />
+                <Text style={[styles.socialText, { color: '#0A66C2' }]}>LinkedIn</Text>
+              </TouchableOpacity>
+            )}
+            {user.instagram && (
+              <TouchableOpacity
+                style={[styles.socialBtn, styles.instagramBtn]}
+                onPress={openInstagram}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="logo-instagram" size={18} color="#E1306C" />
+                <Text style={[styles.socialText, { color: '#E1306C' }]}>Instagram</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </ScrollView>
 
       <ConnectModal
@@ -240,7 +297,11 @@ export default function UserDetailScreen() {
       <FilterSheet
         visible={reportSheetOpen}
         title={t('user.report_title')}
-        options={REPORT_OPTIONS.map((r) => ({ label: t(`user.${r.label}`), value: r.label, icon: r.icon }))}
+        options={REPORT_OPTIONS.map((r) => ({
+          label: t(`user.${r.label}`),
+          value: r.label,
+          icon: r.icon,
+        }))}
         value=""
         onSelect={handleReport}
         onClose={() => setReportSheetOpen(false)}
@@ -272,7 +333,7 @@ const DetailRow: React.FC<{ icon: string; label: string; value: string }> = ({
     <View style={styles.detailIcon}>
       <Ionicons name={icon as any} size={16} color={Colors.primary} />
     </View>
-    <View>
+    <View style={styles.detailText}>
       <Text style={styles.detailLabel}>{label}</Text>
       <Text style={styles.detailValue}>{value}</Text>
     </View>
@@ -291,7 +352,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     zIndex: 10,
   },
-  backBtn: {
+  headerBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -301,30 +362,19 @@ const styles = StyleSheet.create({
   },
 
   scroll: { paddingBottom: Spacing.xxl },
-
   coverSection: { position: 'relative', marginBottom: 48 },
-  cover: { height: 103, backgroundColor: Colors.primary },
+  cover: { height: 120, backgroundColor: Colors.primary },
   avatarWrap: { position: 'absolute', bottom: -36, left: Spacing.xl },
 
   identitySection: {
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.sm,
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  name: {
-    fontSize: FontSize.xl,
-    fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
-  },
+  name: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.textPrimary },
   handle: { fontSize: FontSize.sm, color: Colors.textSecondary },
-  ctaRow: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.xs },
-  ctaBtn: { flex: 1 },
+  ctaRow: { marginTop: Spacing.sm },
+  ctaBtn: {},
   chatDisabledBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -348,11 +398,7 @@ const styles = StyleSheet.create({
     ...Shadow.sm,
   },
   statItem: { flex: 1, alignItems: 'center', gap: 2 },
-  statValue: {
-    fontSize: FontSize.lg,
-    fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
-  },
+  statValue: { fontSize: FontSize.lg, fontWeight: FontWeight.bold, color: Colors.textPrimary },
   statLabel: { fontSize: FontSize.xs, color: Colors.textTertiary },
   statDivider: { width: 1, backgroundColor: Colors.border },
 
@@ -370,6 +416,7 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.semibold,
     color: Colors.textTertiary,
     letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   sectionContent: { gap: Spacing.sm },
   aboutText: { fontSize: FontSize.base, color: Colors.textSecondary, lineHeight: 22 },
@@ -383,6 +430,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  detailText: { flex: 1 },
   detailLabel: { fontSize: FontSize.xs, color: Colors.textTertiary, letterSpacing: 0.5 },
   detailValue: {
     fontSize: FontSize.base,
@@ -390,4 +438,24 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.medium,
     marginTop: 1,
   },
+
+  socialRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginHorizontal: Spacing.xl,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.xs,
+  },
+  socialBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    height: 44,
+    borderRadius: BorderRadius.full,
+  },
+  linkedinBtn: { backgroundColor: '#EFF6FF' },
+  instagramBtn: { backgroundColor: '#FFF0F5' },
+  socialText: { fontSize: FontSize.sm, fontWeight: FontWeight.semibold },
 });

@@ -11,6 +11,7 @@ import { useAuthStore } from '../store/authStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { useMessageStore } from '../store/messageStore';
 import { useConnectionStore } from '../store/connectionStore';
+import { registerPushToken } from '../utils/pushNotifications';
 
 export const unstable_settings = {
   initialRouteName: 'index',
@@ -68,6 +69,7 @@ export default function RootLayout() {
       subscribeNotifications(currentUser.id);
       subscribeToMessages(currentUser.id);
       subscribeToConnectionUpdates(currentUser.id);
+      registerPushToken();
     }
   }, [ready, isAuthenticated, currentUser?.id]);
 

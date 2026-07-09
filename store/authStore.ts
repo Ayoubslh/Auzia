@@ -35,7 +35,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         } catch {
           // profiles table not set up yet — still mark as authenticated
         }
-        const hasOnboarded = !!(profile?.nickname && profile?.cityOfResidence);
+        const hasOnboarded = !!(profile?.cityOfResidence);
         set({ isAuthenticated: true, currentUser: profile, hasCompletedOnboarding: hasOnboarded });
       }
     } finally {
@@ -49,7 +49,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (error) throw error;
     let profile: User | null = null;
     try { profile = await userRepository.getCurrentUser(); } catch { /* profile not set up yet */ }
-    const hasOnboarded = !!(profile?.nickname && profile?.cityOfResidence);
+    const hasOnboarded = !!(profile?.cityOfResidence);
     set({ isAuthenticated: true, currentUser: profile, hasCompletedOnboarding: hasOnboarded });
   },
 
