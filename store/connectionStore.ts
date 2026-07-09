@@ -7,18 +7,26 @@ let connChannel: ReturnType<typeof supabase.channel> | null = null;
 
 interface ConnectionState {
   sentRequests: Connection[];
+  receivedRequests: Connection[];
   fetchSentRequests: (userId: string) => Promise<void>;
+  fetchReceivedRequests: (userId: string) => Promise<void>;
   sendRequest: (senderId: string, receiverId: string, note?: string) => Promise<Connection>;
   subscribeToUpdates: (myId: string) => void;
   unsubscribeFromUpdates: () => void;
 }
 
-export const useConnectionStore = create<ConnectionState>((set, get) => ({
+export const useConnectionStore = create<ConnectionState>((set) => ({
   sentRequests: [],
+  receivedRequests: [],
 
   fetchSentRequests: async (userId: string) => {
     const requests = await connectionRepository.getSentRequests(userId);
     set({ sentRequests: requests });
+  },
+
+  fetchReceivedRequests: async (userId: string) => {
+    const requests = await connectionRepository.getReceivedRequests(userId);
+    set({ receivedRequests: requests });
   },
 
   sendRequest: async (senderId: string, receiverId: string, note?: string) => {
@@ -34,6 +42,7 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     }
     connChannel = supabase
       .channel(`connections-${myId}-${Date.now()}`)
+      // My sent requests got updated (accepted/rejected)
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
@@ -43,8 +52,43 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
         const updated = payload.new as any;
         set((s) => ({
           sentRequests: s.sentRequests.map((r) =>
-            r.id === updated.id ? { ...r, status: updated.status } : r
+            r.id === updated.id ? { ...r, status: updated.status } : r,
           ),
+        }));
+      })
+      // Someone sent me a new request
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'connections',
+        filter: `receiver_id=eq.${myId}`,
+      }, (payload) => {
+        const row = payload.new as any;
+        if (row.status !== 'pending') return;
+        const incoming: Connection = {
+          id: row.id,
+          senderId: row.sender_id,
+          receiverId: row.receiver_id,
+          note: row.note ?? undefined,
+          status: row.status,
+          createdAt: row.created_at,
+        };
+        set((s) => ({
+          receivedRequests: [incoming, ...s.receivedRequests.filter((r) => r.id !== incoming.id)],
+        }));
+      })
+      // A request I received was updated (e.g., sender withdrew it — edge case)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'connections',
+        filter: `receiver_id=eq.${myId}`,
+      }, (payload) => {
+        const updated = payload.new as any;
+        set((s) => ({
+          receivedRequests: updated.status === 'pending'
+            ? s.receivedRequests
+            : s.receivedRequests.filter((r) => r.id !== updated.id),
         }));
       })
       .subscribe();

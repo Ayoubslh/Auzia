@@ -36,7 +36,7 @@ function toProduct(row: any): Product {
     dishes:       (row.product_dishes ?? []).map((d: any): Dish => ({
       id: d.id, name: d.name, emoji: d.emoji, description: d.description ?? undefined,
     })),
-    availableAt:  (row.brand_store_links ?? []).map((l: any) => l.store_id),
+    availableAt:  [],
   };
 }
 
@@ -44,7 +44,7 @@ class ProductRepository implements IProductRepository {
   async getProducts(filter?: ProductFilter): Promise<Product[]> {
     let query = supabase
       .from('products')
-      .select('*, product_items(*), product_dishes(*), brand_store_links(store_id)');
+      .select('*, product_items(*), product_dishes(*)');
 
     if (filter?.country)  query = query.eq('country', filter.country);
     if (filter?.city)     query = query.or(`city.eq.${filter.city},cities.cs.{${filter.city}}`);
@@ -58,7 +58,7 @@ class ProductRepository implements IProductRepository {
   async getProductById(id: string): Promise<Product | null> {
     const { data, error } = await supabase
       .from('products')
-      .select('*, product_items(*), product_dishes(*), brand_store_links(store_id)')
+      .select('*, product_items(*), product_dishes(*)')
       .eq('id', id)
       .single();
     if (error) return null;

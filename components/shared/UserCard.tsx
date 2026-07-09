@@ -13,32 +13,101 @@ interface UserCardProps {
   user: User;
   onConnect?: () => void;
   onMessage?: () => void;
+  onRespond?: () => void;
   isPending?: boolean;
   isConnected?: boolean;
+  isReceivedPending?: boolean;
 }
 
-export const UserCard: React.FC<UserCardProps> = ({ user, onConnect, onMessage, isPending = false, isConnected = false }) => {
+export const UserCard: React.FC<UserCardProps> = ({
+  user,
+  onConnect,
+  onMessage,
+  onRespond,
+  isPending = false,
+  isConnected = false,
+  isReceivedPending = false,
+}) => {
   const router = useRouter();
   const { t } = useTranslation();
+
+  const renderAction = () => {
+    if (isConnected) {
+      if (user.allowChat === false) {
+        return (
+          <View style={[styles.actionBtn, styles.disabledBtn]}>
+            <Ionicons name="lock-closed-outline" size={13} color={Colors.textTertiary} />
+            <Text style={styles.mutedText}>Désactivé</Text>
+          </View>
+        );
+      }
+      return (
+        <Button
+          label="Message"
+          variant="primary"
+          size="sm"
+          onPress={onMessage ?? (() => {})}
+          style={styles.actionBtn}
+        />
+      );
+    }
+    if (isReceivedPending) {
+      return (
+        <Button
+          label="Répondre"
+          variant="outline"
+          size="sm"
+          onPress={onRespond ?? (() => router.push('/notifications' as any))}
+          style={styles.actionBtn}
+        />
+      );
+    }
+    if (isPending) {
+      return (
+        <View style={[styles.actionBtn, styles.disabledBtn]}>
+          <Ionicons name="time-outline" size={13} color={Colors.textTertiary} />
+          <Text style={styles.mutedText}>{t('user_card.pending')}</Text>
+        </View>
+      );
+    }
+    return (
+      <Button
+        label={t('user_card.connect')}
+        variant="primary"
+        size="sm"
+        onPress={onConnect ?? (() => {})}
+        style={styles.actionBtn}
+      />
+    );
+  };
 
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Avatar initials={user.avatarInitials} color={user.avatarColor} size={44} />
+        <Avatar
+          initials={user.avatarInitials}
+          color={user.avatarColor}
+          size={44}
+          imageUrl={user.avatar}
+        />
 
         <View style={styles.headerInfo}>
           <View style={styles.nameRow}>
-            <Text style={styles.name}>{getDisplayName(user)}</Text>
+            <Text style={styles.name} numberOfLines={1}>{getDisplayName(user)}</Text>
             <Text style={styles.flag}>{user.countryOfResidenceFlag}</Text>
           </View>
-          <Text style={styles.status}>{user.status}</Text>
+          <Text style={styles.status} numberOfLines={1}>{user.status}</Text>
         </View>
       </View>
 
       <View style={styles.metaRow}>
         <Text style={styles.metaText}>{user.cityOfResidence}</Text>
-        <View style={styles.dot} />
-        <Text style={styles.metaText}>{user.workField}</Text>
+        {user.workField ? (
+          <>
+            <View style={styles.dot} />
+            <Text style={styles.metaText}>{user.workField}</Text>
+          </>
+        ) : null}
         {user.commonConnections !== undefined && user.commonConnections > 0 && (
           <>
             <View style={styles.dot} />
@@ -47,9 +116,9 @@ export const UserCard: React.FC<UserCardProps> = ({ user, onConnect, onMessage, 
         )}
       </View>
 
-      {user.aboutMe && (
+      {user.aboutMe ? (
         <Text style={styles.about} numberOfLines={2}>{user.aboutMe}</Text>
-      )}
+      ) : null}
 
       <View style={styles.actions}>
         <Button
@@ -59,33 +128,7 @@ export const UserCard: React.FC<UserCardProps> = ({ user, onConnect, onMessage, 
           onPress={() => router.push(`/user/${user.id}`)}
           style={styles.profileBtn}
         />
-        {isConnected && user.allowChat ? (
-          <Button
-            label="Message"
-            variant="primary"
-            size="sm"
-            onPress={onMessage ?? (() => {})}
-            style={styles.connectBtn}
-          />
-        ) : isConnected && !user.allowChat ? (
-          <View style={[styles.connectBtn, styles.pendingBtn]}>
-            <Ionicons name="lock-closed-outline" size={13} color={Colors.textTertiary} />
-            <Text style={styles.pendingText}>Désactivé</Text>
-          </View>
-        ) : isPending ? (
-          <View style={[styles.connectBtn, styles.pendingBtn]}>
-            <Ionicons name="time-outline" size={13} color={Colors.textTertiary} />
-            <Text style={styles.pendingText}>{t('user_card.pending')}</Text>
-          </View>
-        ) : (
-          <Button
-            label={t('user_card.connect')}
-            variant="primary"
-            size="sm"
-            onPress={onConnect ?? (() => {})}
-            style={styles.connectBtn}
-          />
-        )}
+        {renderAction()}
       </View>
     </View>
   );
@@ -104,17 +147,17 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
   headerInfo: { flex: 1, gap: 2 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  name: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.textPrimary },
+  name: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.textPrimary, flex: 1 },
   flag: { fontSize: 13 },
   status: { fontSize: FontSize.sm, color: Colors.textSecondary },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flexWrap: 'wrap' },
   metaText: { fontSize: FontSize.sm, color: Colors.textTertiary },
   dot: { width: 3, height: 3, borderRadius: 2, backgroundColor: Colors.textTertiary },
   about: { fontSize: FontSize.sm, color: Colors.textSecondary, lineHeight: 18 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.xs },
   profileBtn: { flex: 1 },
-  connectBtn: { flex: 1 },
-  pendingBtn: {
+  actionBtn: { flex: 1 },
+  disabledBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -125,5 +168,5 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     backgroundColor: Colors.background,
   },
-  pendingText: { fontSize: FontSize.sm, color: Colors.textTertiary, fontWeight: FontWeight.medium },
+  mutedText: { fontSize: FontSize.sm, color: Colors.textTertiary, fontWeight: FontWeight.medium },
 });

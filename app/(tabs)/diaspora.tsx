@@ -96,7 +96,7 @@ export default function DiasporaScreen() {
   const { filteredUsers, fetchUsers, filter, setFilter, resetFilter } = useDiasporaStore();
   const { fetchConversations, totalUnreadMessages } = useMessageStore();
   const { unreadCount: unreadNotifications } = useNotificationStore();
-  const { sentRequests, fetchSentRequests, sendRequest: sendConnectionRequest, subscribeToUpdates, unsubscribeFromUpdates } = useConnectionStore();
+  const { sentRequests, receivedRequests, fetchSentRequests, fetchReceivedRequests, sendRequest: sendConnectionRequest, subscribeToUpdates, unsubscribeFromUpdates } = useConnectionStore();
   const showToast = useToastStore((s) => s.show);
   const { t } = useTranslation();
 
@@ -108,12 +108,17 @@ export default function DiasporaScreen() {
 
   const pendingIds = useMemo(
     () => new Set(sentRequests.filter((r) => r.status === 'pending').map((r) => r.receiverId)),
-    [sentRequests]
+    [sentRequests],
   );
 
   const acceptedIds = useMemo(
     () => new Set(sentRequests.filter((r) => r.status === 'accepted').map((r) => r.receiverId)),
-    [sentRequests]
+    [sentRequests],
+  );
+
+  const receivedFromIds = useMemo(
+    () => new Set(receivedRequests.filter((r) => r.status === 'pending').map((r) => r.senderId)),
+    [receivedRequests],
   );
 
   const cardAnim = useRef(new Animated.Value(0)).current;
@@ -124,6 +129,7 @@ export default function DiasporaScreen() {
     await Promise.all([
       fetchUsers(),
       fetchSentRequests(currentUser.id),
+      fetchReceivedRequests(currentUser.id),
       fetchConversations(),
     ]);
     setRefreshing(false);
@@ -134,6 +140,7 @@ export default function DiasporaScreen() {
     fetchConversations();
     if (currentUser) {
       fetchSentRequests(currentUser.id);
+      fetchReceivedRequests(currentUser.id);
       subscribeToUpdates(currentUser.id);
     }
     return () => { unsubscribeFromUpdates(); };
@@ -364,6 +371,7 @@ export default function DiasporaScreen() {
                 initials={markerUser.avatarInitials}
                 color={markerUser.avatarColor}
                 size={40}
+                imageUrl={markerUser.avatar}
               />
               <View style={styles.markerCardInfo}>
                 <Text style={styles.markerCardName} numberOfLines={1}>
@@ -451,8 +459,10 @@ export default function DiasporaScreen() {
               const convId = [currentUser.id, item.id].sort().join('_');
               router.push(`/messages/${convId}` as any);
             }}
+            onRespond={() => router.push('/notifications' as any)}
             isPending={pendingIds.has(item.id)}
             isConnected={acceptedIds.has(item.id)}
+            isReceivedPending={receivedFromIds.has(item.id)}
           />
         )}
         showsVerticalScrollIndicator={false}
