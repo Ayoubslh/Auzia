@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
   Platform,
   ScrollView,
   Alert,
-  TextInput,
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -17,24 +16,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
-import { FilterSheet } from '../../components/ui/FilterSheet';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../supabase/client';
 import { showAvatarPicker, uploadAvatar } from '../../utils/imagePicker';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius } from '../../theme';
 import countriesData from '../../mock/countries.json';
 import { getCityCoordinates } from '../../utils/cityCoordinates';
-import { PHONE_CODES, type PhoneCode } from '../../utils/phoneCodes';
 
 const COUNTRY_OPTIONS = countriesData.map((c) => ({
   label: c.country,
   value: c.country,
-  icon: c.flag,
-}));
-
-const CODE_OPTIONS = PHONE_CODES.map((c) => ({
-  label: `${c.label} (${c.code})`,
-  value: c.flag,
   icon: c.flag,
 }));
 
@@ -46,10 +37,7 @@ export default function ReqInfoScreen() {
   const [lastName, setLastName] = useState('');
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
-  const [phone, setPhone] = useState('');
   const [aboutMe, setAboutMe] = useState('');
-  const [selectedCode, setSelectedCode] = useState<PhoneCode>(PHONE_CODES[0]);
-  const [codePickerOpen, setCodePickerOpen] = useState(false);
   const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
 
   const selectedCountry = countriesData.find((c) => c.country === country);
@@ -62,23 +50,8 @@ export default function ReqInfoScreen() {
     lastName.trim() &&
     country.trim() &&
     city.trim() &&
-    phone.trim() &&
     aboutMe.trim()
   );
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      const stored = data.user?.user_metadata?.phone_number as string | undefined;
-      if (!stored) return;
-      const match = PHONE_CODES.find((c) => stored.startsWith(c.code));
-      if (match) {
-        setSelectedCode(match);
-        setPhone(stored.slice(match.code.length));
-      } else {
-        setPhone(stored);
-      }
-    });
-  }, []);
 
   const handleCountrySelect = (value: string) => {
     setCountry(value);
@@ -103,7 +76,6 @@ export default function ReqInfoScreen() {
         countryOfResidenceFlag: flag,
         cityOfResidence: city,
         avatarInitials: initials,
-        phoneNumber: `${selectedCode.code}${phone.trim()}`,
         aboutMe: aboutMe.trim(),
         avatar: avatarUrl,
         ...(coords ?? {}),
@@ -150,6 +122,14 @@ export default function ReqInfoScreen() {
           <View style={styles.formSection}>
             <Text style={styles.title}>{t('onboarding.reqinfo_title')}</Text>
 
+            {/* Privacy notice */}
+            <View style={styles.privacyNotice}>
+              <Ionicons name="eye-outline" size={14} color={Colors.primary} />
+              <Text style={styles.privacyText}>
+                Ces informations seront visibles par les autres membres de la communauté.
+              </Text>
+            </View>
+
             <View style={styles.nameRow}>
               <Input
                 label={t('onboarding.firstname_label')}
@@ -187,32 +167,6 @@ export default function ReqInfoScreen() {
               containerStyle={styles.input}
             />
 
-            {/* Phone with country code */}
-            <View style={styles.phoneContainer}>
-              <Text style={styles.phoneLabel}>{t('auth.phone_label')}</Text>
-              <View style={styles.phoneRow}>
-                <TouchableOpacity
-                  style={styles.codeBtn}
-                  onPress={() => setCodePickerOpen(true)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.codeFlag}>{selectedCode.flag}</Text>
-                  <Text style={styles.codeText}>{selectedCode.code}</Text>
-                  <Ionicons name="chevron-down" size={13} color={Colors.textTertiary} />
-                </TouchableOpacity>
-                <View style={styles.phoneDivider} />
-                <TextInput
-                  style={styles.phoneInput}
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                  placeholder={t('auth.phone_placeholder')}
-                  placeholderTextColor={Colors.textTertiary}
-                />
-              </View>
-            </View>
-
-            {/* About me — mandatory */}
             <Input
               label={t('onboarding.about_label')}
               value={aboutMe}
@@ -242,19 +196,6 @@ export default function ReqInfoScreen() {
           <Text style={styles.nextText}>{t('common.next')}</Text>
         </TouchableOpacity>
       </KeyboardAvoidingView>
-
-      <FilterSheet
-        visible={codePickerOpen}
-        title={t('auth.phone_code_picker_title')}
-        options={CODE_OPTIONS}
-        value={selectedCode.flag}
-        onSelect={(flag) => {
-          const found = PHONE_CODES.find((c) => c.flag === flag);
-          if (found) setSelectedCode(found);
-          setCodePickerOpen(false);
-        }}
-        onClose={() => setCodePickerOpen(false)}
-      />
     </SafeAreaView>
   );
 }
@@ -304,53 +245,36 @@ const styles = StyleSheet.create({
   formSection: { paddingHorizontal: Spacing.xl, gap: Spacing.md },
   nameRow: { flexDirection: 'row', gap: Spacing.sm },
   nameInput: { flex: 1 },
+
   title: {
     fontSize: FontSize.xxl,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
+
+  privacyNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.xs,
+    backgroundColor: Colors.primaryLight,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.xs,
+  },
+  privacyText: {
+    flex: 1,
+    fontSize: FontSize.xs,
+    color: Colors.primary,
+    lineHeight: 17,
+    fontWeight: FontWeight.medium,
+  },
+
   input: {},
   textarea: {
     minHeight: 80,
     ...Platform.select({ android: { textAlignVertical: 'top' as const } }),
     paddingTop: Spacing.sm,
-  },
-
-  phoneContainer: { gap: Spacing.xs },
-  phoneLabel: {
-    fontSize: FontSize.xs,
-    fontWeight: FontWeight.semibold,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  phoneRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.white,
-    minHeight: 48,
-    overflow: 'hidden',
-  },
-  codeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-  },
-  codeFlag: { fontSize: 18 },
-  codeText: { fontSize: FontSize.base, fontWeight: FontWeight.medium, color: Colors.textPrimary },
-  phoneDivider: { width: 1, height: 28, backgroundColor: Colors.border },
-  phoneInput: {
-    flex: 1,
-    fontSize: FontSize.base,
-    color: Colors.textPrimary,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
   },
 
   dots: { flexDirection: 'row', gap: 6, marginTop: Spacing.xl, alignSelf: 'center' },

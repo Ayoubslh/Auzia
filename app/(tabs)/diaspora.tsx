@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   View,
   Text,
@@ -138,11 +139,16 @@ export default function DiasporaScreen() {
   useEffect(() => {
     fetchUsers();
     fetchConversations();
-    if (currentUser) {
-      fetchSentRequests(currentUser.id);
-      fetchReceivedRequests(currentUser.id);
-    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (currentUser) {
+        fetchSentRequests(currentUser.id);
+        fetchReceivedRequests(currentUser.id);
+      }
+    }, [currentUser?.id]),
+  );
 
   // ── Marker card ────────────────────────────────────────────────────────────
 

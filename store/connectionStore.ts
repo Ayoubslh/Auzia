@@ -8,8 +8,10 @@ let connChannel: ReturnType<typeof supabase.channel> | null = null;
 interface ConnectionState {
   sentRequests: Connection[];
   receivedRequests: Connection[];
+  acceptedReceivedConnections: Connection[];
   fetchSentRequests: (userId: string) => Promise<void>;
   fetchReceivedRequests: (userId: string) => Promise<void>;
+  fetchAcceptedReceived: (userId: string) => Promise<void>;
   sendRequest: (senderId: string, receiverId: string, note?: string) => Promise<Connection>;
   subscribeToUpdates: (myId: string) => void;
   unsubscribeFromUpdates: () => void;
@@ -18,6 +20,7 @@ interface ConnectionState {
 export const useConnectionStore = create<ConnectionState>((set) => ({
   sentRequests: [],
   receivedRequests: [],
+  acceptedReceivedConnections: [],
 
   fetchSentRequests: async (userId: string) => {
     const requests = await connectionRepository.getSentRequests(userId);
@@ -27,6 +30,11 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
   fetchReceivedRequests: async (userId: string) => {
     const requests = await connectionRepository.getReceivedRequests(userId);
     set({ receivedRequests: requests });
+  },
+
+  fetchAcceptedReceived: async (userId: string) => {
+    const requests = await connectionRepository.getAcceptedReceivedConnections(userId);
+    set({ acceptedReceivedConnections: requests });
   },
 
   sendRequest: async (senderId: string, receiverId: string, note?: string) => {

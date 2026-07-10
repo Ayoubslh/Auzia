@@ -60,6 +60,7 @@ export interface Connection {
   status: ConnectionStatus;
   createdAt: string;
   receiverUser?: ConnectionUser;
+  senderUser?: ConnectionUser;
 }
 
 // ─── Message ─────────────────────────────────────────────────────────────────

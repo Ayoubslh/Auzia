@@ -235,7 +235,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.xl,
-    justifyContent: 'space-between',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.07,
@@ -295,7 +294,7 @@ const styles = StyleSheet.create({
   forgotRow: { alignSelf: 'flex-end', marginTop: -4 },
   forgotText: { fontSize: FontSize.sm, color: Colors.primary, fontWeight: FontWeight.medium },
 
-  formBottom: { gap: Spacing.md },
+  formBottom: { gap: Spacing.md, marginTop: Spacing.xl },
   switchRow: { flexDirection: 'row', justifyContent: 'center', gap: 4 },
   switchLabel: { fontSize: FontSize.base, color: Colors.textSecondary },
   switchLink: { fontSize: FontSize.base, color: Colors.primary, fontWeight: FontWeight.semibold },

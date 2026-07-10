@@ -5,6 +5,7 @@ export interface IConnectionRepository {
   sendRequest(senderId: string, receiverId: string, note?: string): Promise<Connection>;
   getSentRequests(senderId: string): Promise<Connection[]>;
   getReceivedRequests(receiverId: string): Promise<Connection[]>;
+  getAcceptedReceivedConnections(receiverId: string): Promise<Connection[]>;
   respond(connectionId: string, status: 'accepted' | 'rejected'): Promise<void>;
   getStatus(myId: string, otherId: string): Promise<ConnectionStatus | null>;
 }
@@ -60,6 +61,29 @@ class ConnectionRepository implements IConnectionRepository {
       .order('created_at', { ascending: false });
     if (error) throw error;
     return (data ?? []).map(toConnection);
+  }
+
+  async getAcceptedReceivedConnections(receiverId: string): Promise<Connection[]> {
+    const { data, error } = await supabase
+      .from('connections')
+      .select('*, sender:profiles!sender_id(id,first_name,last_name,avatar_initials,avatar_color,avatar_url,nickname,name_display_mode)')
+      .eq('receiver_id', receiverId)
+      .eq('status', 'accepted')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((row) => ({
+      ...toConnection(row),
+      senderUser: row.sender ? {
+        id:              row.sender.id,
+        firstName:       row.sender.first_name ?? '',
+        lastName:        row.sender.last_name ?? '',
+        avatarInitials:  row.sender.avatar_initials ?? '',
+        avatarColor:     row.sender.avatar_color ?? '#2E7D32',
+        avatar:          row.sender.avatar_url ?? undefined,
+        nickname:        row.sender.nickname ?? '',
+        nameDisplayMode: row.sender.name_display_mode ?? 'nickname',
+      } : undefined,
+    }));
   }
 
   async respond(connectionId: string, status: 'accepted' | 'rejected'): Promise<void> {
