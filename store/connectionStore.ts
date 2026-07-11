@@ -17,7 +17,7 @@ interface ConnectionState {
   unsubscribeFromUpdates: () => void;
 }
 
-export const useConnectionStore = create<ConnectionState>((set) => ({
+export const useConnectionStore = create<ConnectionState>((set, get) => ({
   sentRequests: [],
   receivedRequests: [],
   acceptedReceivedConnections: [],
@@ -63,6 +63,10 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
             r.id === updated.id ? { ...r, status: updated.status } : r,
           ),
         }));
+        // Refetch to get fresh receiverUser profile (optimistic add has no profile join)
+        if (updated.status === 'accepted') {
+          get().fetchSentRequests(myId);
+        }
       })
       // Someone sent me a new request
       .on('postgres_changes', {
@@ -85,7 +89,7 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
           receivedRequests: [incoming, ...s.receivedRequests.filter((r) => r.id !== incoming.id)],
         }));
       })
-      // A request I received was updated (e.g., sender withdrew it — edge case)
+      // A request I received was updated (accepted/rejected/withdrawn)
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
@@ -98,6 +102,10 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
             ? s.receivedRequests
             : s.receivedRequests.filter((r) => r.id !== updated.id),
         }));
+        // Refresh accepted list so the diaspora card flips to Message immediately
+        if (updated.status === 'accepted') {
+          get().fetchAcceptedReceived(myId);
+        }
       })
       .subscribe();
   },

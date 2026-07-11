@@ -21,6 +21,18 @@ import { getDisplayName } from '../../utils/displayName';
 import { Colors, FontSize, FontWeight, Spacing, BorderRadius } from '../../theme';
 import type { Conversation, Connection, ConnectionUser } from '../../types';
 
+function fallbackUser(id: string): ConnectionUser {
+  return {
+    id,
+    firstName: '',
+    lastName: '',
+    nickname: '…',
+    avatarInitials: '?',
+    avatarColor: '#9E9E9E',
+    nameDisplayMode: 'nickname' as const,
+  };
+}
+
 type SectionHeader = { kind: 'header'; label: string };
 type InviteItem = { kind: 'invite'; connection: Connection; user: ConnectionUser };
 type ConversationItem = { kind: 'conversation'; conversation: Conversation };
@@ -49,12 +61,12 @@ export default function MessagesScreen() {
 
   // Pending sent requests (no note) → horizontal strip
   const pendingSentNoNote = sentRequests.filter(
-    (c) => c.status === 'pending' && !c.note && c.receiverUser,
+    (c) => c.status === 'pending' && !c.note,
   );
 
   // Pending sent WITH note → vertical section
   const pendingSentWithNote = sentRequests.filter(
-    (c) => c.status === 'pending' && !!c.note && c.receiverUser,
+    (c) => c.status === 'pending' && !!c.note,
   );
 
   // Accepted connections that don't have a conversation yet
@@ -63,12 +75,11 @@ export default function MessagesScreen() {
   const acceptedSentNoChat = sentRequests.filter(
     (c) =>
       c.status === 'accepted' &&
-      c.receiverUser &&
-      !conversationParticipantIds.has(c.receiverUser.id),
+      !conversationParticipantIds.has(c.receiverId),
   );
 
   const acceptedReceivedNoChat = acceptedReceivedConnections.filter(
-    (c) => c.senderUser && !conversationParticipantIds.has(c.senderUser.id),
+    (c) => !conversationParticipantIds.has(c.senderId),
   );
 
   const listData: ListItem[] = useMemo(() => {
@@ -79,12 +90,14 @@ export default function MessagesScreen() {
 
     const rows: ListItem[] = [];
 
-    // Pending with note section
-    const noteInvites = pendingSentWithNote.filter((c) => matchUser(c.receiverUser!));
+    // Pending with note section — include even if receiverUser is missing
+    const noteInvites = pendingSentWithNote.filter(
+      (c) => !q || (c.receiverUser ? matchUser(c.receiverUser) : true),
+    );
     if (noteInvites.length > 0) {
       rows.push({ kind: 'header', label: 'DEMANDES AVEC NOTE' });
       for (const c of noteInvites) {
-        rows.push({ kind: 'invite', connection: c, user: c.receiverUser! });
+        rows.push({ kind: 'invite', connection: c, user: c.receiverUser ?? fallbackUser(c.receiverId) });
       }
     }
 
@@ -103,15 +116,19 @@ export default function MessagesScreen() {
     }
 
     // Connected users with no chat
-    const sentConnected = acceptedSentNoChat.filter((c) => matchUser(c.receiverUser!));
-    const receivedConnected = acceptedReceivedNoChat.filter((c) => matchUser(c.senderUser!));
+    const sentConnected = acceptedSentNoChat.filter(
+      (c) => !q || (c.receiverUser ? matchUser(c.receiverUser) : true),
+    );
+    const receivedConnected = acceptedReceivedNoChat.filter(
+      (c) => !q || (c.senderUser ? matchUser(c.senderUser) : true),
+    );
     if (sentConnected.length + receivedConnected.length > 0) {
       rows.push({ kind: 'header', label: 'CONNEXIONS' });
       for (const c of sentConnected) {
-        rows.push({ kind: 'connected', connection: c, user: c.receiverUser! });
+        rows.push({ kind: 'connected', connection: c, user: c.receiverUser ?? fallbackUser(c.receiverId) });
       }
       for (const c of receivedConnected) {
-        rows.push({ kind: 'connected', connection: c, user: c.senderUser! });
+        rows.push({ kind: 'connected', connection: c, user: c.senderUser ?? fallbackUser(c.senderId) });
       }
     }
 
@@ -133,24 +150,27 @@ export default function MessagesScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.recentRow}
         >
-          {pendingSentNoNote.map(({ id, receiverUser }) => (
-            <TouchableOpacity
-              key={id}
-              style={styles.recentAvatar}
-              activeOpacity={0.8}
-              onPress={() => router.push(`/user/${receiverUser!.id}` as any)}
-            >
-              <Avatar
-                initials={receiverUser!.avatarInitials}
-                color={receiverUser!.avatarColor}
-                size={52}
-                imageUrl={receiverUser!.avatar}
-              />
-              <View style={styles.pendingBadge}>
-                <Ionicons name="time" size={11} color={Colors.white} />
-              </View>
-            </TouchableOpacity>
-          ))}
+          {pendingSentNoNote.map((c) => {
+            const user = c.receiverUser ?? fallbackUser(c.receiverId);
+            return (
+              <TouchableOpacity
+                key={c.id}
+                style={styles.recentAvatar}
+                activeOpacity={0.8}
+                onPress={() => router.push(`/user/${user.id}` as any)}
+              >
+                <Avatar
+                  initials={user.avatarInitials}
+                  color={user.avatarColor}
+                  size={52}
+                  imageUrl={user.avatar}
+                />
+                <View style={styles.pendingBadge}>
+                  <Ionicons name="time" size={11} color={Colors.white} />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
     ) : null;
