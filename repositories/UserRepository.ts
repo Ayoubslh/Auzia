@@ -91,7 +91,8 @@ class UserRepository implements IUserRepository {
 
     const { data, error } = await supabase
       .from('profiles')
-      .update({
+      .upsert({
+        id:                        user.id,
         nickname:                  updates.nickname,
         first_name:                updates.firstName,
         last_name:                 updates.lastName,
@@ -116,8 +117,7 @@ class UserRepository implements IUserRepository {
         name_display_mode:         updates.nameDisplayMode,
         push_token:                updates.pushToken,
         has_completed_onboarding:  true,
-      })
-      .eq('id', user.id)
+      }, { onConflict: 'id' })
       .select()
       .single();
 

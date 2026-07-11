@@ -98,7 +98,13 @@ export default function RegisterScreen() {
       const code = parsed.queryParams?.code as string | undefined;
       if (!code) throw new Error('No authorization code in redirect URL');
 
-      router.replace(`/auth/callback?code=${encodeURIComponent(code)}` as any);
+      const { error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+      if (sessionError) throw sessionError;
+
+      const { loginWithGoogle } = useAuthStore.getState();
+      await loginWithGoogle();
+      const { hasCompletedOnboarding } = useAuthStore.getState();
+      router.replace(hasCompletedOnboarding ? '/(tabs)/diaspora' : '/onboarding/welcome' as any);
     } catch (e: any) {
       Alert.alert('Erreur Google', e.message ?? 'Inscription Google échouée');
     } finally {

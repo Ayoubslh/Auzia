@@ -69,7 +69,15 @@ export default function LoginScreen() {
       const code = parsed.queryParams?.code as string | undefined;
       if (!code) throw new Error('No authorization code in redirect URL');
 
-      router.replace(`/auth/callback?code=${encodeURIComponent(code)}` as any);
+      // Exchange here — before any navigation — PKCE flow state in AsyncStorage
+      // is only valid while still in the same JS context as signInWithOAuth.
+      const { error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+      if (sessionError) throw sessionError;
+
+      const { loginWithGoogle } = useAuthStore.getState();
+      await loginWithGoogle();
+      const { hasCompletedOnboarding } = useAuthStore.getState();
+      router.replace(hasCompletedOnboarding ? '/(tabs)/diaspora' : '/onboarding/welcome' as any);
     } catch (e: any) {
       Alert.alert('Erreur Google', e.message ?? 'Connexion Google échouée');
     } finally {
