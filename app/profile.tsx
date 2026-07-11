@@ -77,9 +77,14 @@ export default function ProfileScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.white} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.editBtn} onPress={handleEditAvatar} activeOpacity={0.8}>
-          <Ionicons name={uploadingAvatar ? 'hourglass-outline' : 'camera-outline'} size={20} color={Colors.white} />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.editBtn} onPress={() => router.push('/edit-profile' as any)} activeOpacity={0.8}>
+            <Ionicons name="pencil-outline" size={18} color={Colors.white} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.editBtn} onPress={handleEditAvatar} activeOpacity={0.8}>
+            <Ionicons name={uploadingAvatar ? 'hourglass-outline' : 'camera-outline'} size={20} color={Colors.white} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -109,13 +114,6 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        <View style={styles.statsRow}>
-          <StatItem value={currentUser.connectionCount} label={t('profile.stat_connections')} />
-          <View style={styles.statDivider} />
-          <StatItem value={currentUser.countriesCount} label={t('profile.stat_countries')} />
-          <View style={styles.statDivider} />
-          <StatItem value={currentUser.memberSince} label={t('profile.stat_since')} />
-        </View>
 
         {currentUser.aboutMe && (
           <Section title={t('profile.about_section')}>
@@ -124,7 +122,9 @@ export default function ProfileScreen() {
         )}
 
         <Section title={t('profile.info_section')}>
-          <DetailRow icon="briefcase-outline" label={t('profile.field_domain')} value={currentUser.workField} />
+          {!!currentUser.workField && (
+            <DetailRow icon="briefcase-outline" label={t('profile.field_domain')} value={currentUser.workField} />
+          )}
           <DetailRow
             icon="location-outline"
             label={t('profile.field_residence')}
@@ -133,6 +133,7 @@ export default function ProfileScreen() {
           {currentUser.phoneNumber && (
             <DetailRow icon="call-outline" label={t('profile.field_phone')} value={currentUser.phoneNumber} />
           )}
+          <DetailRow icon="calendar-outline" label={t('profile.stat_since')} value={currentUser.memberSince} />
         </Section>
 
         {(currentUser.linkedin || currentUser.instagram) && (
@@ -217,13 +218,6 @@ export default function ProfileScreen() {
   );
 }
 
-const StatItem: React.FC<{ value: number | string; label: string }> = ({ value, label }) => (
-  <View style={styles.statItem}>
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </View>
-);
-
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <View style={styles.section}>
     <Text style={styles.sectionTitle}>{title}</Text>
@@ -288,6 +282,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerRight: { flexDirection: 'row', gap: Spacing.sm },
   editBtn: {
     width: 36,
     height: 36,
@@ -314,24 +309,6 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   handle: { fontSize: FontSize.sm, color: Colors.textSecondary },
-
-  statsRow: {
-    flexDirection: 'row',
-    marginHorizontal: Spacing.xl,
-    marginTop: Spacing.base,
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.base,
-    ...Shadow.sm,
-  },
-  statItem: { flex: 1, alignItems: 'center', gap: 2 },
-  statValue: {
-    fontSize: FontSize.lg,
-    fontWeight: FontWeight.bold,
-    color: Colors.textPrimary,
-  },
-  statLabel: { fontSize: FontSize.xs, color: Colors.textTertiary },
-  statDivider: { width: 1, backgroundColor: Colors.border },
 
   section: {
     marginHorizontal: Spacing.xl,
