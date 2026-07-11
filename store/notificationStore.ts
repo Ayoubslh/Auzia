@@ -67,6 +67,19 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   },
 
   respond: async (connectionId, actionUserId, myId, status, notificationId) => {
+    // When accepting, fetch the note so we can seed it as the first message
+    let noteContent: string | undefined;
+    let noteSenderId: string | undefined;
+    if (status === 'accepted') {
+      const { data } = connectionId
+        ? await supabase.from('connections').select('note, sender_id').eq('id', connectionId).maybeSingle()
+        : await supabase.from('connections').select('note, sender_id').eq('sender_id', actionUserId!).eq('receiver_id', myId).eq('status', 'pending').maybeSingle();
+      if (data?.note) {
+        noteContent = data.note;
+        noteSenderId = data.sender_id;
+      }
+    }
+
     if (connectionId) {
       await connectionRepository.respond(connectionId, status);
     } else if (actionUserId) {
@@ -74,7 +87,14 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     } else {
       throw new Error('No connection reference available');
     }
-    // Only remove from local list if DB update succeeded
+
+    // Seed the connection note as the first message in the conversation
+    if (status === 'accepted' && noteContent && noteSenderId) {
+      await supabase
+        .from('messages')
+        .insert({ sender_id: noteSenderId, receiver_id: myId, content: noteContent });
+    }
+
     set((s) => ({
       notifications: s.notifications.filter((n) => n.id !== notificationId),
       unreadCount: Math.max(0, s.unreadCount - 1),

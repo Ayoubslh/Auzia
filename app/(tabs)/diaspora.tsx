@@ -97,7 +97,7 @@ export default function DiasporaScreen() {
   const { filteredUsers, fetchUsers, filter, setFilter, resetFilter } = useDiasporaStore();
   const { fetchConversations, totalUnreadMessages } = useMessageStore();
   const { unreadCount: unreadNotifications } = useNotificationStore();
-  const { sentRequests, receivedRequests, fetchSentRequests, fetchReceivedRequests, sendRequest: sendConnectionRequest } = useConnectionStore();
+  const { sentRequests, receivedRequests, acceptedReceivedConnections, fetchSentRequests, fetchReceivedRequests, fetchAcceptedReceived, sendRequest: sendConnectionRequest } = useConnectionStore();
   const showToast = useToastStore((s) => s.show);
   const { t } = useTranslation();
 
@@ -113,8 +113,11 @@ export default function DiasporaScreen() {
   );
 
   const acceptedIds = useMemo(
-    () => new Set(sentRequests.filter((r) => r.status === 'accepted').map((r) => r.receiverId)),
-    [sentRequests],
+    () => new Set([
+      ...sentRequests.filter((r) => r.status === 'accepted').map((r) => r.receiverId),
+      ...acceptedReceivedConnections.map((r) => r.senderId),
+    ]),
+    [sentRequests, acceptedReceivedConnections],
   );
 
   const receivedFromIds = useMemo(
@@ -146,6 +149,7 @@ export default function DiasporaScreen() {
       if (currentUser) {
         fetchSentRequests(currentUser.id);
         fetchReceivedRequests(currentUser.id);
+        fetchAcceptedReceived(currentUser.id);
       }
     }, [currentUser?.id]),
   );
