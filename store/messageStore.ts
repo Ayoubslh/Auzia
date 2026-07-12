@@ -86,11 +86,20 @@ export const useMessageStore = create<MessageState>((set, get) => ({
 
         const { activeConversationId } = get();
         const convParts = activeConversationId?.split('_') ?? [];
-        if (convParts.includes(msg.senderId)) {
+        const isActiveConv = convParts.includes(msg.senderId);
+
+        if (isActiveConv) {
           set((s) => ({ activeMessages: [...s.activeMessages, msg] }));
           messageRepository.markAsRead(myId, msg.senderId);
         } else {
-          set((s) => ({ totalUnreadMessages: s.totalUnreadMessages + 1 }));
+          set((s) => ({
+            totalUnreadMessages: s.totalUnreadMessages + 1,
+            conversations: s.conversations.map((c) =>
+              c.participant.id === msg.senderId
+                ? { ...c, lastMessage: msg, unreadCount: c.unreadCount + 1 }
+                : c,
+            ),
+          }));
         }
       })
       .subscribe();

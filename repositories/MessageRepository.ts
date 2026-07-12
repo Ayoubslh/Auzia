@@ -26,18 +26,31 @@ class MessageRepository implements IMessageRepository {
     if (!session?.user) return [];
     const myId = session.user.id;
 
-    // Get last message per unique pair where I'm a participant
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*, sender:profiles!sender_id(id,nickname,avatar_url,avatar_initials,avatar_color), receiver:profiles!receiver_id(id,nickname,avatar_url,avatar_initials,avatar_color)')
-      .or(`sender_id.eq.${myId},receiver_id.eq.${myId}`)
-      .order('created_at', { ascending: false });
+    // Fetch all messages I'm part of + unread counts in parallel
+    const [messagesResult, unreadResult] = await Promise.all([
+      supabase
+        .from('messages')
+        .select('*, sender:profiles!sender_id(id,nickname,first_name,last_name,name_display_mode,avatar_url,avatar_initials,avatar_color), receiver:profiles!receiver_id(id,nickname,first_name,last_name,name_display_mode,avatar_url,avatar_initials,avatar_color)')
+        .or(`sender_id.eq.${myId},receiver_id.eq.${myId}`)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('messages')
+        .select('sender_id')
+        .eq('receiver_id', myId)
+        .eq('read', false),
+    ]);
 
-    if (error) throw error;
+    if (messagesResult.error) throw messagesResult.error;
+
+    // Build unread count per sender
+    const unreadBySender: Record<string, number> = {};
+    for (const row of unreadResult.data ?? []) {
+      unreadBySender[row.sender_id] = (unreadBySender[row.sender_id] ?? 0) + 1;
+    }
 
     // Deduplicate: keep only the most recent message per pair
     const seen = new Set<string>();
-    const deduped = (data ?? []).filter((row: any) => {
+    const deduped = (messagesResult.data ?? []).filter((row: any) => {
       const key = [row.sender_id, row.receiver_id].sort().join('_');
       if (seen.has(key)) return false;
       seen.add(key);
@@ -46,16 +59,19 @@ class MessageRepository implements IMessageRepository {
 
     return deduped.map((row: any): Conversation => {
       const isMe = row.sender_id === myId;
-      const participant = isMe ? row.receiver : row.sender;
+      const p = isMe ? row.receiver : row.sender;
       return {
         id: [row.sender_id, row.receiver_id].sort().join('_'),
         participant: {
-          id:             participant.id,
-          nickname:       participant.nickname ?? '',
-          avatar:         participant.avatar_url ?? undefined,
-          avatarInitials: participant.avatar_initials ?? '',
-          avatarColor:    participant.avatar_color ?? '#2E7D32',
-          firstName: '', lastName: '', email: '',
+          id:             p.id,
+          nickname:       p.nickname ?? '',
+          firstName:      p.first_name ?? '',
+          lastName:       p.last_name ?? '',
+          nameDisplayMode: p.name_display_mode ?? 'nickname',
+          avatar:         p.avatar_url ?? undefined,
+          avatarInitials: p.avatar_initials ?? '',
+          avatarColor:    p.avatar_color ?? '#2E7D32',
+          email: '',
           countryOfOrigin: '', countryOfOriginFlag: '',
           countryOfResidence: '', countryOfResidenceFlag: '',
           cityOfResidence: '', workField: '',
@@ -63,7 +79,7 @@ class MessageRepository implements IMessageRepository {
           latitude: 0, longitude: 0,
         },
         lastMessage: toMessage(row),
-        unreadCount: 0,
+        unreadCount: isMe ? 0 : (unreadBySender[p.id] ?? 0),
       };
     });
   }

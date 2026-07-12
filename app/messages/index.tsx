@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   FlatList,
   StatusBar,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '../../components/ui/Avatar';
@@ -51,13 +51,15 @@ export default function MessagesScreen() {
   } = useConnectionStore();
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
+    if (!currentUser) return;
     fetchConversations();
-    if (currentUser) {
-      fetchSentRequests(currentUser.id);
-      fetchAcceptedReceived(currentUser.id);
-    }
+    fetchSentRequests(currentUser.id);
+    fetchAcceptedReceived(currentUser.id);
   }, [currentUser?.id]);
+
+  // Refetch on every tab focus so new requests + messages are always current
+  useFocusEffect(refresh);
 
   // Pending sent requests (no note) → horizontal strip
   const pendingSentNoNote = sentRequests.filter(
