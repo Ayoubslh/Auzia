@@ -260,9 +260,12 @@ export default function DiasporaScreen() {
   const handleSendConnectRequest = async (note: string) => {
     const target = connectTarget;
     setConnectTarget(null);
-    if (currentUser && target) {
+    if (!currentUser || !target) return;
+    try {
       await sendConnectionRequest(currentUser.id, target.id, note);
       showToast(t('user.request_sent', { name: target.nickname || target.firstName }));
+    } catch (e: any) {
+      showToast(e?.message ?? 'Erreur lors de l\'envoi de la demande');
     }
   };
 

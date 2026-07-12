@@ -71,11 +71,14 @@ export default function UserDetailScreen() {
 
   const handleSendConnectRequest = async (note: string) => {
     setConnectModalVisible(false);
-    if (currentUser) {
+    if (!currentUser) return;
+    try {
       await sendConnectionRequest(currentUser.id, user.id, note);
       setFetchedStatus('pending');
+      showToast(t('user.request_sent', { name: displayName }));
+    } catch (e: any) {
+      showToast(e?.message ?? 'Erreur lors de l\'envoi de la demande');
     }
-    showToast(t('user.request_sent', { name: displayName }));
   };
 
   const handleMorePress = () => {

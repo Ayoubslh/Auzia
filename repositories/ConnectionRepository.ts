@@ -35,7 +35,7 @@ class ConnectionRepository implements IConnectionRepository {
   async sendRequest(senderId: string, receiverId: string, note?: string): Promise<Connection> {
     const { data, error } = await supabase
       .from('connections')
-      .insert({ sender_id: senderId, receiver_id: receiverId, note: note ?? null })
+      .insert({ sender_id: senderId, receiver_id: receiverId, note: note || null })
       .select()
       .single();
     if (error) throw error;
