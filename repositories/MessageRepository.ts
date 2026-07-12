@@ -72,7 +72,6 @@ class MessageRepository implements IMessageRepository {
           avatarInitials: p.avatar_initials ?? '',
           avatarColor:    p.avatar_color ?? '#2E7D32',
           email: '',
-          countryOfOrigin: '', countryOfOriginFlag: '',
           countryOfResidence: '', countryOfResidenceFlag: '',
           cityOfResidence: '', workField: '',
           connectionCount: 0, countriesCount: 0, memberSince: '',

@@ -22,8 +22,7 @@ export const MOCK_CURRENT_USER: User = {
   email: 'karim.benali@gmail.com',
   avatarInitials: 'KB',
   avatarColor: '#7C3AED',
-  countryOfOrigin: 'Algérie',
-  countryOfOriginFlag: '🇩🇿',
+
   countryOfResidence: 'France',
   countryOfResidenceFlag: '🇫🇷',
   cityOfResidence: 'Paris',
@@ -69,7 +68,7 @@ export const MOCK_USERS: User[] = [
     memberSince: 'Mar 2024',
     latitude: 45.7640,
     longitude: 4.8357,
-    isLookingForOpportunities: true,
+  
     commonConnections: 1,
   },
   {
@@ -248,7 +247,7 @@ export const MOCK_USERS: User[] = [
     memberSince: 'Avr 2024',
     latitude: 52.3676,
     longitude: 4.9041,
-    isLookingForOpportunities: true,
+  
   },
   {
     id: 'user-10',
@@ -361,7 +360,7 @@ export const MOCK_USERS: User[] = [
     memberSince: 'Juin 2024',
     latitude: -33.8688,
     longitude: 151.2093,
-    isLookingForOpportunities: true,
+  
   },
   {
     id: 'user-15',

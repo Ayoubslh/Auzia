@@ -243,11 +243,6 @@ export default function UserDetailScreen() {
             />
           )}
           <DetailRow
-            icon="earth-outline"
-            label={t('profile.field_origin')}
-            value={`${user.countryOfOrigin} ${user.countryOfOriginFlag}`}
-          />
-          <DetailRow
             icon="location-outline"
             label={t('profile.field_residence')}
             value={`${user.cityOfResidence}, ${user.countryOfResidence}`}

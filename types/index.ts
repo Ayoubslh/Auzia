@@ -9,8 +9,6 @@ export interface User {
   avatar?: string;
   avatarInitials: string;
   avatarColor: string;
-  countryOfOrigin: string;
-  countryOfOriginFlag: string;
   countryOfResidence: string;
   countryOfResidenceFlag: string;
   cityOfResidence: string;
@@ -25,7 +23,6 @@ export interface User {
   memberSince: string;
   latitude: number;
   longitude: number;
-  isLookingForOpportunities?: boolean;
   commonConnections?: number;
   showOnMap?: boolean;
   allowChat?: boolean;

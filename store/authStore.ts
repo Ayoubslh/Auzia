@@ -70,7 +70,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       avatar: authUser.user_metadata?.avatar_url ?? undefined,
       avatarInitials: (authUser.email ?? 'AU').slice(0, 2).toUpperCase(),
       avatarColor: '#2E7D32',
-      countryOfOrigin: '', countryOfOriginFlag: '',
       countryOfResidence: '', countryOfResidenceFlag: '',
       cityOfResidence: '', workField: '',
       connectionCount: 0, countriesCount: 0,
